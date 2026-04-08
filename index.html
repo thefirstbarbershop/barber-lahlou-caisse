@@ -61,7 +61,7 @@
                     <div>
                         <h1 class="text-lg font-black tracking-tighter uppercase italic leading-none">BARBER LAHLOU</h1>
                         <div id="syncIndicator" class="flex items-center gap-1.5 text-[9px] text-slate-500 mt-1 uppercase font-black tracking-widest">
-                            <i class="fa-solid fa-circle-notch fa-spin"></i> Sync en cours
+                            <i class="fa-solid fa-circle-notch fa-spin"></i> Initialisation...
                         </div>
                     </div>
                 </div>
@@ -144,30 +144,9 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : {
-                apiKey: "", /"AIzaSyBdNRfkM94j2NWCBnnnjYnuzjdfwKdIIK"
-                authDomain: "barber-lahlou-caisse.firebaseapp.com",
-                projectId: "barber-lahlou-caisse",
-                storageBucket: "barber-lahlou-caisse.firebasestorage.app",
-                messagingSenderId: "637483895643",
-                appId: "1:637483895643:web:3aa1f4ef4463b54587a87e"
-            };
-
-        // --- FORMAT DATES MAROC ---
-        const marocFormat = { timeZone: 'Africa/Casablanca', hour12: false };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'barber-lahlou-app';
-
-        function getISOStaticDate() {
-             const d = new Date();
-             const year = new Intl.DateTimeFormat('en', { year: 'numeric', ...marocFormat }).format(d);
-             const month = new Intl.DateTimeFormat('en', { month: '2-digit', ...marocFormat }).format(d);
-             const day = new Intl.DateTimeFormat('en', { day: '2-digit', ...marocFormat }).format(d);
-             return `${year}-${month}-${day}`;
-        }
-
-        // --- DONNEES DU CATALOGUE ---
+        // =========================================================================================
+        // 1. DEFINITION DES DONNEES ET ETATS LOCAUX
+        // =========================================================================================
         const WORKERS = ['SOUHAIL', 'HAITAM', 'FAYSAL', 'HATIM'];
         const SERVICES = [
             { id: 1, name: 'Coupe Homme', price: 50, color: 'bg-white border-slate-100 hover:border-blue-400 text-slate-800', icon: 'fa-scissors' },
@@ -187,11 +166,19 @@
         let cart = [];
         let dailySales = [];
         let reportSales = [];
-        let currentReportDate = getISOStaticDate();
-        let reportUnsubscribe = null;
         let db;
         let auth;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'barber-lahlou-app';
 
+        // --- GESTION DES DATES MAROC ---
+        const marocFormat = { timeZone: 'Africa/Casablanca', hour12: false };
+        function getISOStaticDate() {
+             const d = new Date();
+             const year = new Intl.DateTimeFormat('en', { year: 'numeric', ...marocFormat }).format(d);
+             const month = new Intl.DateTimeFormat('en', { month: '2-digit', ...marocFormat }).format(d);
+             const day = new Intl.DateTimeFormat('en', { day: '2-digit', ...marocFormat }).format(d);
+             return `${year}-${month}-${day}`;
+        }
         function getFriendlyDate() {
             const d = new Date();
             const dayName = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', ...marocFormat }).format(d).toUpperCase();
@@ -201,45 +188,13 @@
             return `${dayName} ${dayNum}/${monthNum}/${yearNum}`;
         }
 
-        const app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
+        let currentReportDate = getISOStaticDate();
+        let reportUnsubscribe = null;
 
-        const initAuth = async () => {
-          try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-              await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-              await signInAnonymously(auth);
-            }
-          } catch (e) {
-            console.error("Auth error:", e);
-          }
-        };
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            const syncEl = document.getElementById('syncIndicator');
-            if (user && syncEl) {
-                const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
-                const todaySync = getISOStaticDate();
-                const q = query(salesRef, where("date", "==", todaySync));
-                
-                onSnapshot(q, (snapshot) => {
-                    dailySales = [];
-                    snapshot.forEach((doc) => dailySales.push({ id: doc.id, ...doc.data() }));
-                    syncEl.innerHTML = `<i class="fa-solid fa-cloud-check text-green-500 mr-1"></i> Connecté: ${dailySales.length} Tickets`;
-                    syncEl.className = "flex items-center text-[9px] text-green-500 mt-1 uppercase font-black tracking-widest";
-                    updateTicketNumber();
-                    if(!document.getElementById('reportModal').classList.contains('hidden')) openReport();
-                }, (err) => {
-                  console.error("Firestore error:", err);
-                  syncEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500 mr-1"></i> Error Sync`;
-                  syncEl.className = "flex items-center text-[9px] text-red-500 mt-1 uppercase font-black tracking-widest";
-                });
-            }
-        });
-
+        // =========================================================================================
+        // 2. FONCTIONS DE RENDU INTERFACE (UI)
+        // -> C'EST CE QUI VA EMPECHER L'ECRAN BLANC MEME SI FIREBASE ECHOUE
+        // =========================================================================================
         function updateTicketNumber() {
             const el = document.getElementById('ticketNumberDisplay');
             if (el) el.innerText = '#' + String(dailySales.length + 1).padStart(4, '0');
@@ -312,131 +267,6 @@
             if (totalEl) totalEl.innerText = total.toFixed(2);
         }
 
-        window.handlePayment = async (m) => {
-            if (cart.length === 0) return;
-            const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
-            const now = new Date();
-            const sale = {
-                ticketNumber: dailySales.length + 1,
-                dateFriendly: getFriendlyDate(),
-                date: getISOStaticDate(),
-                time: new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', ...marocFormat }).format(now),
-                items: [...cart],
-                total: total,
-                method: m,
-                worker: activeWorker,
-                timestamp: now.getTime()
-            };
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'sales'), sale);
-                window.showPrintPreviewTicket(sale);
-                cart = []; renderCart();
-            } catch (e) { console.error("Firestore add error:", e); }
-        };
-
-        window.showPrintPreviewTicket = (s) => {
-            const d = document.getElementById('customDialog');
-            if (!d) return;
-            document.getElementById('dialogTitle').innerText = "Encaissement !";
-            document.getElementById('dialogIcon').innerHTML = '<div class="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 border border-emerald-200 shadow-sm"><i class="fa-solid fa-check text-2xl text-emerald-500"></i></div>';
-            document.getElementById('dialogMessage').innerHTML = `<p class="font-bold text-slate-500 text-xs">Le ticket de ${s.worker} est bien enregistré.</p>`;
-            
-            const pZone = document.getElementById('printZone');
-            if (pZone) {
-                pZone.innerHTML = `<div class="text-center mb-4"><h1 class="text-2xl font-black italic uppercase">BARBER LAHLOU</h1><p class="text-[8px] font-black uppercase tracking-[0.2em] opacity-60">Service Cloud Pro</p></div><div class="border-y border-black border-dashed py-3 mb-3 text-[9px] font-bold uppercase leading-relaxed"><div class="flex justify-between"><span>Ticket:</span><span>#${String(s.ticketNumber).padStart(4,'0')}</span></div><div class="flex justify-between font-black"><span>Date:</span><span>${s.dateFriendly}</span></div><div class="flex justify-between"><span>Heure:</span><span>${s.time}</span></div><div class="flex justify-between"><span>Staff:</span><span>${s.worker}</span></div></div><table class="w-full text-[9px] font-bold uppercase mb-4">` + s.items.map(i=>`<tr class="border-b border-slate-100"><td class="py-1.5">${i.qty}x ${i.name}</td><td class="py-1.5 text-right italic">${i.price*i.qty} Dh</td></tr>`).join('') + `</table><div class="flex justify-between font-black text-sm border-t-2 border-black border-double pt-3"><span>TOTAL TTC</span><span>${s.total.toFixed(2)} Dh</span></div><div class="text-center mt-8 text-[8px] font-black uppercase tracking-[0.2em]">Merci de votre confiance</div>`;
-            }
-            
-            document.getElementById('dialogButtons').innerHTML = `<button onclick="window.closeDialog()" class="flex-1 bg-slate-50 py-3 rounded-xl font-black uppercase text-[10px] transition-all active:scale-95">Fermer</button><button onclick="window.print()" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-black uppercase text-[10px] shadow-lg transition-all active:scale-95"><i class="fa-solid fa-print mr-1"></i> Imprimer</button>`;
-            d.classList.remove('hidden');
-        };
-
-        window.changeReportDate = (dateVal) => {
-            if (!dateVal) return;
-            currentReportDate = dateVal;
-            window.loadReportData();
-        };
-
-        window.loadReportData = () => {
-            const content = document.getElementById('reportContent');
-            content.innerHTML = '<div class="flex justify-center items-center h-40 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin text-3xl"></i></div>';
-            
-            if (reportUnsubscribe) {
-                reportUnsubscribe();
-            }
-
-            const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
-            const q = query(salesRef, where("date", "==", currentReportDate));
-            
-            reportUnsubscribe = onSnapshot(q, (snapshot) => {
-                reportSales = [];
-                snapshot.forEach((doc) => reportSales.push({ id: doc.id, ...doc.data() }));
-                renderReportContent();
-            }, (err) => {
-                console.error("Report Sync Error:", err);
-                content.innerHTML = '<p class="text-center text-red-500">Erreur de chargement de l\'historique.</p>';
-            });
-        };
-
-        function renderReportContent() {
-            const content = document.getElementById('reportContent');
-            if (!content) return;
-            
-            if (reportSales.length === 0) {
-                content.innerHTML = '<p class="text-center py-20 text-slate-300 font-black uppercase italic tracking-widest text-xs opacity-50">--- Aucune vente ce jour ---</p>';
-                return;
-            }
-
-            const total = reportSales.reduce((s, v) => s + v.total, 0);
-            let workersHTML = '';
-            WORKERS.forEach(w => {
-                const wSales = reportSales.filter(s => s.worker === w);
-                const wTotal = wSales.reduce((s, v) => s + v.total, 0);
-                workersHTML += `<div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm"><p class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-2">${w}</p><div class="flex justify-between items-end"><p class="text-xl font-black text-slate-900 italic">${wTotal} <small class="text-[9px] font-bold">Dh</small></p><div class="bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 text-[8px] font-black text-blue-600 italic">50% = ${wTotal/2} Dh</div></div></div>`;
-            });
-
-            content.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"><div class="bg-slate-900 text-white p-6 rounded-3xl shadow-xl"><p class="text-slate-500 font-black text-[9px] uppercase tracking-widest mb-1 italic">Total Boutique</p><p class="text-4xl font-black italic tracking-tighter leading-tight">${total} <small class="text-lg opacity-40">MAD</small></p></div><div class="bg-blue-600 text-white p-6 rounded-3xl shadow-xl"><p class="text-blue-200 font-black text-[9px] uppercase tracking-widest mb-1 italic">Net Patron (50%)</p><p class="text-4xl font-black italic tracking-tighter leading-tight">${total/2} <small class="text-lg opacity-40">MAD</small></p></div></div><h3 class="font-black text-slate-300 mb-4 uppercase text-[9px] tracking-widest italic">Performance Journalière</h3><div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">${workersHTML}</div><h3 class="font-black text-slate-300 mb-4 uppercase text-[9px] tracking-widest italic">Liste des tickets</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">` + reportSales.slice().sort((a,b)=> b.timestamp - a.timestamp).map(s=>`<div class="bg-white p-3 lg:p-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="font-black text-[10px] text-slate-900 uppercase italic leading-none">#${String(s.ticketNumber).padStart(4,'0')} - ${s.worker}</p><p class="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">${s.time}</p></div><div class="flex items-center gap-3"><p class="font-black text-slate-900 text-[11px] italic">${s.total} Dh</p><button onclick="window.deleteTicket('${s.id}')" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button></div></div>`).join('') + `</div>`;
-        }
-
-        window.openReport = () => {
-            const modal = document.getElementById('reportModal');
-            if (!modal) return;
-            
-            const datePicker = document.getElementById('reportDatePicker');
-            if (datePicker && !datePicker.value) {
-                datePicker.value = currentReportDate;
-            }
-            
-            window.loadReportData();
-            modal.classList.remove('hidden');
-        };
-
-        window.deleteTicket = (id) => {
-            window.showDialog('confirm', 'Supprimer Ticket?', 'Wach bss7 bghiti tmsse7 had ticket bo7do?', async () => {
-                window.closeDialog();
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sales', id));
-                } catch (e) {
-                    console.error("Delete error:", e);
-                    alert("Erreur de suppression.");
-                }
-            });
-        };
-
-        window.resetDay = () => {
-            if (reportSales.length === 0) return;
-            window.showDialog('confirm', 'Reset Nhar?', 'Wach m2ked bghiti tmse7 GA3 tickets dyal had nhar? Had l3amaliya makatrje3ch.', async () => {
-                window.closeDialog();
-                try {
-                    for (const s of reportSales) {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sales', s.id));
-                    }
-                } catch (e) {
-                    console.error("Reset error:", e);
-                    alert("Erreur de réinitialisation.");
-                }
-            });
-        };
-
         window.closeDialog = () => document.getElementById('customDialog').classList.add('hidden');
         window.closeReport = () => document.getElementById('reportModal').classList.add('hidden');
         window.confirmClearCart = () => { if(cart.length>0) window.showDialog('confirm','Annuler?','Effacer ce ticket?',()=>{cart=[];renderCart();window.closeDialog();}); };
@@ -457,6 +287,14 @@
             if(cart.length>0) window.showDialog('confirm','Aperçu?','Voir le ticket avant encaisser?',()=>{ window.handlePayment('Ticket Provisoire'); }); 
         };
 
+        // =========================================================================================
+        // 3. AFFICHAGE IMMEDIAT DE L'APPLICATION
+        // =========================================================================================
+        renderWorkers(); 
+        renderServices(); 
+        renderCart();
+        updateTicketNumber();
+
         setInterval(() => { 
             const d = new Date();
             const topClock = document.getElementById('topClockDisplay');
@@ -467,10 +305,193 @@
             if (topDate) topDate.innerText = getFriendlyDate();
             if (clock) clock.innerText = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', ...marocFormat }).format(d);
         }, 1000);
+
+        // =========================================================================================
+        // 4. CONFIGURATION FIREBASE (CONNEXION CLOUD)
+        // =========================================================================================
         
-        renderWorkers(); 
-        renderServices(); 
-        renderCart();
+        // MAMOUNE: DIR COLLER L'API KEY DYALEK HNA f blast `apiKey: ""`
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "AIzaSyBdNRfkM94j2NWCBnnnnjYnuzjdfwKdIIk", 
+                authDomain: "barber-lahlou-caisse.firebaseapp.com",
+                projectId: "barber-lahlou-caisse",
+                storageBucket: "barber-lahlou-caisse.firebasestorage.app",
+                messagingSenderId: "637483895643",
+                appId: "1:637483895643:web:3aa1f4ef4463b54587a87e"
+            };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            const initAuth = async () => {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                  await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                  await signInAnonymously(auth);
+                }
+            };
+            initAuth();
+
+            onAuthStateChanged(auth, (user) => {
+                const syncEl = document.getElementById('syncIndicator');
+                if (user && syncEl) {
+                    const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
+                    const todaySync = getISOStaticDate();
+                    const q = query(salesRef, where("date", "==", todaySync));
+                    
+                    onSnapshot(q, (snapshot) => {
+                        dailySales = [];
+                        snapshot.forEach((doc) => dailySales.push({ id: doc.id, ...doc.data() }));
+                        syncEl.innerHTML = `<i class="fa-solid fa-cloud-check text-green-500 mr-1"></i> Connecté: ${dailySales.length} Tickets`;
+                        syncEl.className = "flex items-center text-[9px] text-green-500 mt-1 uppercase font-black tracking-widest";
+                        updateTicketNumber();
+                        if(!document.getElementById('reportModal').classList.contains('hidden')) openReport();
+                    }, (err) => {
+                      console.error("Firestore error:", err);
+                      syncEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500 mr-1"></i> Error Sync`;
+                      syncEl.className = "flex items-center text-[9px] text-red-500 mt-1 uppercase font-black tracking-widest";
+                    });
+                }
+            });
+
+            window.handlePayment = async (m) => {
+                if (cart.length === 0) return;
+                const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+                const now = new Date();
+                const sale = {
+                    ticketNumber: dailySales.length + 1,
+                    dateFriendly: getFriendlyDate(),
+                    date: getISOStaticDate(),
+                    time: new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', ...marocFormat }).format(now),
+                    items: [...cart],
+                    total: total,
+                    method: m,
+                    worker: activeWorker,
+                    timestamp: now.getTime()
+                };
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'sales'), sale);
+                    window.showPrintPreviewTicket(sale);
+                    cart = []; renderCart();
+                } catch (e) { 
+                    console.error("Firestore add error:", e); 
+                    window.showDialog('alert', 'Erreur', 'Impossible de sauvegarder sur le Cloud.');
+                }
+            };
+
+            window.showPrintPreviewTicket = (s) => {
+                const d = document.getElementById('customDialog');
+                if (!d) return;
+                document.getElementById('dialogTitle').innerText = "Encaissement !";
+                document.getElementById('dialogIcon').innerHTML = '<div class="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 border border-emerald-200 shadow-sm"><i class="fa-solid fa-check text-2xl text-emerald-500"></i></div>';
+                document.getElementById('dialogMessage').innerHTML = `<p class="font-bold text-slate-500 text-xs">Le ticket de ${s.worker} est bien enregistré.</p>`;
+                
+                const pZone = document.getElementById('printZone');
+                if (pZone) {
+                    pZone.innerHTML = `<div class="text-center mb-4"><h1 class="text-2xl font-black italic uppercase">BARBER LAHLOU</h1><p class="text-[8px] font-black uppercase tracking-[0.2em] opacity-60">Service Cloud Pro</p></div><div class="border-y border-black border-dashed py-3 mb-3 text-[9px] font-bold uppercase leading-relaxed"><div class="flex justify-between"><span>Ticket:</span><span>#${String(s.ticketNumber).padStart(4,'0')}</span></div><div class="flex justify-between font-black"><span>Date:</span><span>${s.dateFriendly}</span></div><div class="flex justify-between"><span>Heure:</span><span>${s.time}</span></div><div class="flex justify-between"><span>Staff:</span><span>${s.worker}</span></div></div><table class="w-full text-[9px] font-bold uppercase mb-4">` + s.items.map(i=>`<tr class="border-b border-slate-100"><td class="py-1.5">${i.qty}x ${i.name}</td><td class="py-1.5 text-right italic">${i.price*i.qty} Dh</td></tr>`).join('') + `</table><div class="flex justify-between font-black text-sm border-t-2 border-black border-double pt-3"><span>TOTAL TTC</span><span>${s.total.toFixed(2)} Dh</span></div><div class="text-center mt-8 text-[8px] font-black uppercase tracking-[0.2em]">Merci de votre confiance</div>`;
+                }
+                
+                document.getElementById('dialogButtons').innerHTML = `<button onclick="window.closeDialog()" class="flex-1 bg-slate-50 py-3 rounded-xl font-black uppercase text-[10px] transition-all active:scale-95">Fermer</button><button onclick="window.print()" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-black uppercase text-[10px] shadow-lg transition-all active:scale-95"><i class="fa-solid fa-print mr-1"></i> Imprimer</button>`;
+                d.classList.remove('hidden');
+            };
+
+            window.changeReportDate = (dateVal) => {
+                if (!dateVal) return;
+                currentReportDate = dateVal;
+                window.loadReportData();
+            };
+
+            window.loadReportData = () => {
+                const content = document.getElementById('reportContent');
+                content.innerHTML = '<div class="flex justify-center items-center h-40 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin text-3xl"></i></div>';
+                
+                if (reportUnsubscribe) {
+                    reportUnsubscribe();
+                }
+
+                const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
+                const q = query(salesRef, where("date", "==", currentReportDate));
+                
+                reportUnsubscribe = onSnapshot(q, (snapshot) => {
+                    reportSales = [];
+                    snapshot.forEach((doc) => reportSales.push({ id: doc.id, ...doc.data() }));
+                    
+                    if (reportSales.length === 0) {
+                        content.innerHTML = '<p class="text-center py-20 text-slate-300 font-black uppercase italic tracking-widest text-xs opacity-50">--- Aucune vente ce jour ---</p>';
+                        return;
+                    }
+
+                    const total = reportSales.reduce((s, v) => s + v.total, 0);
+                    let workersHTML = '';
+                    WORKERS.forEach(w => {
+                        const wSales = reportSales.filter(s => s.worker === w);
+                        const wTotal = wSales.reduce((s, v) => s + v.total, 0);
+                        workersHTML += `<div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm"><p class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-2">${w}</p><div class="flex justify-between items-end"><p class="text-xl font-black text-slate-900 italic">${wTotal} <small class="text-[9px] font-bold">Dh</small></p><div class="bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 text-[8px] font-black text-blue-600 italic">50% = ${wTotal/2} Dh</div></div></div>`;
+                    });
+
+                    content.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"><div class="bg-slate-900 text-white p-6 rounded-3xl shadow-xl"><p class="text-slate-500 font-black text-[9px] uppercase tracking-widest mb-1 italic">Total Boutique</p><p class="text-4xl font-black italic tracking-tighter leading-tight">${total} <small class="text-lg opacity-40">MAD</small></p></div><div class="bg-blue-600 text-white p-6 rounded-3xl shadow-xl"><p class="text-blue-200 font-black text-[9px] uppercase tracking-widest mb-1 italic">Net Patron (50%)</p><p class="text-4xl font-black italic tracking-tighter leading-tight">${total/2} <small class="text-lg opacity-40">MAD</small></p></div></div><h3 class="font-black text-slate-300 mb-4 uppercase text-[9px] tracking-widest italic">Performance Journalière</h3><div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">${workersHTML}</div><h3 class="font-black text-slate-300 mb-4 uppercase text-[9px] tracking-widest italic">Liste des tickets</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">` + reportSales.slice().sort((a,b)=> b.timestamp - a.timestamp).map(s=>`<div class="bg-white p-3 lg:p-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="font-black text-[10px] text-slate-900 uppercase italic leading-none">#${String(s.ticketNumber).padStart(4,'0')} - ${s.worker}</p><p class="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">${s.time}</p></div><div class="flex items-center gap-3"><p class="font-black text-slate-900 text-[11px] italic">${s.total} Dh</p><button onclick="window.deleteTicket('${s.id}')" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button></div></div>`).join('') + `</div>`;
+                }, (err) => {
+                    console.error("Report Sync Error:", err);
+                    content.innerHTML = '<p class="text-center text-red-500">Erreur de chargement de l\'historique.</p>';
+                });
+            };
+
+            window.openReport = () => {
+                const modal = document.getElementById('reportModal');
+                if (!modal) return;
+                
+                const datePicker = document.getElementById('reportDatePicker');
+                if (datePicker && !datePicker.value) {
+                    datePicker.value = currentReportDate;
+                }
+                
+                window.loadReportData();
+                modal.classList.remove('hidden');
+            };
+
+            window.deleteTicket = (id) => {
+                window.showDialog('confirm', 'Supprimer Ticket?', 'Wach bss7 bghiti tmsse7 had ticket bo7do?', async () => {
+                    window.closeDialog();
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sales', id));
+                    } catch (e) {
+                        console.error("Delete error:", e);
+                        window.showDialog('alert', 'Erreur', 'Erreur de suppression.');
+                    }
+                });
+            };
+
+            window.resetDay = () => {
+                if (reportSales.length === 0) return;
+                window.showDialog('confirm', 'Reset Nhar?', 'Wach m2ked bghiti tmse7 GA3 tickets dyal had nhar?', async () => {
+                    window.closeDialog();
+                    try {
+                        for (const s of reportSales) {
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sales', s.id));
+                        }
+                    } catch (e) {
+                        console.error("Reset error:", e);
+                        window.showDialog('alert', 'Erreur', 'Erreur de réinitialisation.');
+                    }
+                });
+            };
+
+        } catch (error) {
+            console.error("Firebase Init Error:", error);
+            const syncEl = document.getElementById('syncIndicator');
+            if (syncEl) {
+                syncEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500 mr-1"></i> CLE API KHASSA`;
+                syncEl.className = "flex items-center text-[9px] text-red-500 mt-1 uppercase font-black tracking-widest";
+            }
+            
+            // Fallback functions si erreur d'API
+            window.handlePayment = async (m) => window.showDialog('alert', 'Erreur Firebase', 'L\'API Key manque. Connectez l\'application.');
+            window.openReport = () => window.showDialog('alert', 'Erreur Firebase', 'L\'API Key manque. Connectez l\'application pour voir l\'historique.');
+        }
     </script>
 </body>
 </html>
