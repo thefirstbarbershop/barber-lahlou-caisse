@@ -166,6 +166,7 @@
         const datesToFetch = [...new Set([dateFormat1, dateFormat2, dateFormat3, dateFormat4])];
 
         const initAuth = async () => {
+            const statusEl = document.getElementById('cloudStatus');
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -174,6 +175,9 @@
                 }
             } catch (error) {
                 console.error("Auth init error:", error);
+                statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Err API Key`;
+                statusEl.className = "flex items-center gap-1 text-xs bg-red-900/50 text-red-400 px-2 py-1 rounded-full ml-2 max-w-[200px] overflow-hidden text-ellipsis";
+                alert("L'API Key li kayna f l'code ghalta. Dkhol l'Firebase w dir liha Copier/Coller mzyan f l'code!");
             }
         };
         initAuth();
