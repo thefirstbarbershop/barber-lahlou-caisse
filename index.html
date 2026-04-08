@@ -144,11 +144,10 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global Firebase Config handling for Canvas Environment
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
             : {
-                apiKey: "",
+                apiKey: "", /"AIzaSyBdNRfkM94j2NWCBnnnjYnuzjdfwKdIIK"
                 authDomain: "barber-lahlou-caisse.firebaseapp.com",
                 projectId: "barber-lahlou-caisse",
                 storageBucket: "barber-lahlou-caisse.firebasestorage.app",
@@ -156,6 +155,19 @@
                 appId: "1:637483895643:web:3aa1f4ef4463b54587a87e"
             };
 
+        // --- FORMAT DATES MAROC ---
+        const marocFormat = { timeZone: 'Africa/Casablanca', hour12: false };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'barber-lahlou-app';
+
+        function getISOStaticDate() {
+             const d = new Date();
+             const year = new Intl.DateTimeFormat('en', { year: 'numeric', ...marocFormat }).format(d);
+             const month = new Intl.DateTimeFormat('en', { month: '2-digit', ...marocFormat }).format(d);
+             const day = new Intl.DateTimeFormat('en', { day: '2-digit', ...marocFormat }).format(d);
+             return `${year}-${month}-${day}`;
+        }
+
+        // --- DONNEES DU CATALOGUE ---
         const WORKERS = ['SOUHAIL', 'HAITAM', 'FAYSAL', 'HATIM'];
         const SERVICES = [
             { id: 1, name: 'Coupe Homme', price: 50, color: 'bg-white border-slate-100 hover:border-blue-400 text-slate-800', icon: 'fa-scissors' },
@@ -170,17 +182,6 @@
             { id: 10, name: 'Coloration', price: 250, color: 'bg-white border-slate-100 hover:border-purple-400 text-slate-800', icon: 'fa-fill-drip' },
             { id: 11, name: 'Pack VIP', price: 150, color: 'bg-gradient-to-br from-amber-100 to-amber-200 border-amber-300 text-amber-900 hover:border-amber-400', icon: 'fa-crown' }
         ];
-
-        const marocFormat = { timeZone: 'Africa/Casablanca', hour12: false };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'barber-lahlou-app';
-
-        function getISOStaticDate() {
-             const d = new Date();
-             const year = new Intl.DateTimeFormat('en', { year: 'numeric', ...marocFormat }).format(d);
-             const month = new Intl.DateTimeFormat('en', { month: '2-digit', ...marocFormat }).format(d);
-             const day = new Intl.DateTimeFormat('en', { day: '2-digit', ...marocFormat }).format(d);
-             return `${year}-${month}-${day}`;
-        }
 
         let activeWorker = WORKERS[0];
         let cart = [];
