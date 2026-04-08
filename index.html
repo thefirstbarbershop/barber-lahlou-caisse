@@ -1,42 +1,28 @@
-```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BARBER LAHLOU - Caisse Cloud</title>
-    <!-- Tailwind CSS pour le design -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome pour les icones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* Styles pour cacher l'application lors de l'impression */
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             body { background: white; margin: 0; padding: 0; }
         }
         .print-only { display: none; }
-        
-        /* Cacher la scrollbar mais garder le scroll */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden">
 
-    <!-- ========================================================================= -->
-    <!-- ZONE D'IMPRESSION (TICKET) - CACHÉE SUR L'ÉCRAN -->
-    <!-- ========================================================================= -->
-    <div id="printZone" class="print-only text-black bg-white w-full max-w-[80mm] mx-auto p-4 text-sm font-mono leading-tight">
-        <!-- Le contenu du ticket sera généré ici par JS -->
-    </div>
+    <div id="printZone" class="print-only text-black bg-white w-full max-w-[80mm] mx-auto p-4 text-sm font-mono leading-tight"></div>
 
-    <!-- ========================================================================= -->
-    <!-- MODALS (RAPPORTS ET ALERTES) -->
-    <!-- ========================================================================= -->
-    <!-- Modal Rapport -->
+    <!-- Modals -->
     <div id="reportModal" class="no-print fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             <div class="bg-slate-900 p-5 text-white flex justify-between items-center">
@@ -45,11 +31,7 @@
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
-            
-            <div class="flex-1 overflow-y-auto p-6 bg-slate-50" id="reportContent">
-                <!-- Le rapport sera généré ici par JS -->
-            </div>
-            
+            <div class="flex-1 overflow-y-auto p-6 bg-slate-50" id="reportContent"></div>
             <div class="p-4 bg-white border-t flex justify-end">
                 <button onclick="printReport()" class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2 rounded-lg font-bold">
                     <i class="fa-solid fa-print mr-2"></i> Imprimer Rapport
@@ -58,89 +40,58 @@
         </div>
     </div>
 
-    <!-- Modal Custom Alert/Confirm -->
     <div id="customDialog" class="no-print fixed inset-0 bg-black/70 z-[100] flex justify-center items-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
             <div id="dialogIcon" class="text-4xl mb-4"></div>
             <h3 id="dialogTitle" class="text-xl font-bold text-slate-800 mb-2">Titre</h3>
             <p id="dialogMessage" class="text-slate-600 mb-6">Message</p>
-            <div class="flex gap-3 w-full" id="dialogButtons">
-                <!-- Boutons générés par JS -->
-            </div>
+            <div class="flex gap-3 w-full" id="dialogButtons"></div>
         </div>
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- APPLICATION PRINCIPALE -->
-    <!-- ========================================================================= -->
+    <!-- Application Principale -->
     <div class="no-print flex flex-col h-full">
-        
-        <!-- HEADER -->
         <header class="bg-slate-900 text-white shadow-md z-10 flex flex-col">
             <div class="p-3 md:p-4 flex justify-between items-center border-b border-slate-700">
                 <div class="flex items-center gap-3">
                     <i class="fa-solid fa-scissors text-blue-400 text-2xl"></i>
                     <h1 class="text-xl md:text-2xl font-bold tracking-wider">BARBER LAHLOU <span class="text-xs md:text-sm font-normal text-slate-400 hidden sm:inline">| Cloud POS</span></h1>
-                    <span id="cloudStatus" class="flex items-center gap-1 text-xs bg-red-900/50 text-red-400 px-2 py-1 rounded-full ml-2"><i class="fa-solid fa-cloud-arrow-down"></i> Connexion...</span>
+                    <span id="cloudStatus" class="flex items-center gap-1 text-xs bg-red-900/50 text-red-400 px-2 py-1 rounded-full ml-2 max-w-[150px] overflow-hidden whitespace-nowrap text-ellipsis"><i class="fa-solid fa-cloud-arrow-down"></i> Connexion...</span>
                 </div>
                 <div class="flex items-center gap-3">
                     <button onclick="openReport()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 md:px-4 py-2 rounded-lg font-bold flex items-center gap-2 border border-slate-600">
-                        <i class="fa-solid fa-chart-column"></i> <span class="hidden sm:inline">La Caisse & Rapports</span>
+                        <i class="fa-solid fa-chart-column"></i> <span class="hidden sm:inline">La Caisse</span>
                     </button>
                 </div>
             </div>
             
-            <!-- SELECTION COIFFEUR -->
-            <div class="bg-slate-800 px-4 py-2 flex items-center gap-2 overflow-x-auto hide-scrollbar" id="workerSelection">
-                <span class="text-sm font-semibold text-slate-400 mr-2 whitespace-nowrap">Chkoun li khedam ?</span>
-                <!-- Boutons coiffeurs générés par JS -->
-            </div>
+            <div class="bg-slate-800 px-4 py-2 flex items-center gap-2 overflow-x-auto hide-scrollbar" id="workerSelection"></div>
         </header>
 
-        <!-- MAIN CONTENT -->
         <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
-            
-            <!-- CATALOGUE (Gauche) -->
             <section class="w-full md:w-2/3 p-4 md:p-6 overflow-y-auto">
                 <h2 class="text-lg md:text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <i class="fa-solid fa-tags text-gray-500"></i> Les Services
                 </h2>
-                
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" id="servicesGrid">
-                    <!-- Les services seront générés ici -->
-                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" id="servicesGrid"></div>
             </section>
 
-            <!-- TICKET EN COURS (Droite) -->
             <section class="w-full md:w-1/3 bg-white border-t md:border-t-0 md:border-l border-gray-200 flex flex-col h-[55vh] md:h-auto shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)]">
-                
                 <div class="p-3 border-b border-gray-200 bg-blue-50 flex items-center justify-between">
                     <div>
                         <h3 class="font-bold text-blue-900 text-sm">Ticket en cours</h3>
                         <p class="text-xs text-blue-600 font-semibold mt-0.5"><i class="fa-solid fa-user"></i> <span id="activeWorkerDisplay">SOUHAIL</span></p>
                     </div>
-                    <span class="text-xs font-bold bg-blue-200 text-blue-800 px-2 py-1 rounded-full" id="ticketNumberDisplay">
-                        #0001
-                    </span>
+                    <span class="text-xs font-bold bg-blue-200 text-blue-800 px-2 py-1 rounded-full" id="ticketNumberDisplay">#0001</span>
                 </div>
 
-                <!-- PANIER -->
-                <div class="flex-1 overflow-y-auto p-2 bg-white" id="cartContainer">
-                    <!-- Le panier sera affiché ici -->
-                    <div class="h-full flex flex-col items-center justify-center text-gray-400 space-y-3">
-                        <i class="fa-solid fa-cart-arrow-down text-4xl opacity-20"></i>
-                        <p class="font-medium text-center">Ticket khawi.</p>
-                        <p class="text-sm text-center px-4" id="cartHelperText">Khtar chi service bach tzidou l SOUHAIL.</p>
-                    </div>
-                </div>
+                <div class="flex-1 overflow-y-auto p-2 bg-white" id="cartContainer"></div>
 
-                <!-- TOTAUX ET PAIEMENT -->
                 <div class="bg-slate-50 p-3 md:p-4 border-t border-gray-200">
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-base text-slate-600 font-semibold">Total</span>
                         <span class="text-2xl md:text-3xl font-black text-slate-900"><span id="cartTotal">0.00</span> <span class="text-base font-bold">MAD</span></span>
                     </div>
-
                     <div class="grid grid-cols-2 gap-2 mb-2">
                         <button onclick="handlePayment('Espèces')" class="bg-green-600 hover:bg-green-700 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
                             <i class="fa-solid fa-money-bill-wave"></i> Espèces
@@ -149,31 +100,23 @@
                             <i class="fa-solid fa-credit-card"></i> Carte
                         </button>
                     </div>
-
                     <div class="flex gap-2">
-                        <button onclick="confirmClearCart()" class="w-1/3 bg-white border border-red-200 text-red-600 hover:bg-red-50 p-2 rounded-xl font-bold text-sm">
-                            Annuler
-                        </button>
-                        <button onclick="showPrintPreview()" class="w-2/3 bg-slate-800 hover:bg-slate-900 text-white p-2 rounded-xl font-bold flex items-center justify-center gap-2 text-sm">
-                            <i class="fa-solid fa-print"></i> Imprimer
-                        </button>
+                        <button onclick="confirmClearCart()" class="w-1/3 bg-white border border-red-200 text-red-600 hover:bg-red-50 p-2 rounded-xl font-bold text-sm">Annuler</button>
+                        <button onclick="showPrintPreview()" class="w-2/3 bg-slate-800 hover:bg-slate-900 text-white p-2 rounded-xl font-bold flex items-center justify-center gap-2 text-sm"><i class="fa-solid fa-print"></i> Imprimer</button>
                     </div>
                 </div>
-
             </section>
         </main>
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- FIREBASE SDK & LOGIQUE JAVASCRIPT -->
-    <!-- ========================================================================= -->
+    <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIGURATION FIREBASE LI SAYEBTI
-        const firebaseConfig = {
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'barber-lahlou-caisse';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyBdNRfkM94j2NWCBnnnjYnuzjdfwKdIIK",
             authDomain: "barber-lahlou-caisse.firebaseapp.com",
             projectId: "barber-lahlou-caisse",
@@ -182,7 +125,6 @@
             appId: "1:637483895643:web:3aa1f4ef4463b54587a87e"
         };
 
-        // --- DONNEES DE BASE ---
         const WORKERS = ['SOUHAIL', 'HAITAM', 'FAYSAL', 'HATIM'];
         const SERVICES = [
             { id: 1, name: 'Coupe Homme', price: 50, color: 'bg-blue-100 hover:bg-blue-200 border-blue-500 text-blue-800' },
@@ -196,16 +138,6 @@
             { id: 9, name: 'Soin Kératine', price: 500, color: 'bg-purple-100 hover:bg-purple-200 border-purple-500 text-purple-800' }
         ];
 
-        // --- FONCTION FORMAT DATE STANDARD (Y-M-D) BASH L'PC YCHOUF BHAL IPHONE ---
-        function getStandardDate() {
-            const d = new Date();
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`; // exemple: 2026-04-08
-        }
-
-        // --- ETAT GLOBAL ---
         let activeWorker = WORKERS[0];
         let cart = [];
         let dailySales = []; 
@@ -213,12 +145,39 @@
         let db;
         let currentUser = null;
 
-        // --- INITIALISATION FIREBASE ---
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         db = getFirestore(app);
 
-        // Connexion
+        // Njem3o ga3 les formats d'la date li dwezti bihom sba7 bash maymchiwlikch
+        const d = new Date();
+        const dayStr = String(d.getDate());
+        const monthStr = String(d.getMonth() + 1);
+        const dayPad = dayStr.padStart(2, '0');
+        const monthPad = monthStr.padStart(2, '0');
+        const year = d.getFullYear();
+
+        const dateFormat1 = `${dayPad}/${monthPad}/${year}`; // 08/04/2026
+        const dateFormat2 = `${dayStr}/${monthStr}/${year}`; // 8/4/2026
+        const dateFormat3 = `${year}-${monthPad}-${dayPad}`; // 2026-04-08
+        const dateFormat4 = d.toLocaleDateString('fr-FR');
+        
+        // Array mjemou3a fiha ga3 les formats
+        const datesToFetch = [...new Set([dateFormat1, dateFormat2, dateFormat3, dateFormat4])];
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth init error:", error);
+            }
+        };
+        initAuth();
+
         onAuthStateChanged(auth, (user) => {
             const statusEl = document.getElementById('cloudStatus');
             if (user) {
@@ -226,9 +185,9 @@
                 statusEl.innerHTML = '<i class="fa-solid fa-cloud"></i> Connecté';
                 statusEl.className = "flex items-center gap-1 text-xs bg-green-900/50 text-green-400 px-2 py-1 rounded-full ml-2";
                 
-                // Jbed les ventes dyal LYOUMA b format standard
-                const todayStr = getStandardDate(); 
-                const q = query(collection(db, "sales"), where("date", "==", todayStr));
+                // Njewbdo tickets mn gaa3 les dates dyal lyouma
+                const salesRef = collection(db, 'artifacts', appId, 'users', user.uid, 'sales');
+                const q = query(salesRef, where("date", "in", datesToFetch));
                 
                 onSnapshot(q, (snapshot) => {
                     dailySales = [];
@@ -236,8 +195,8 @@
                         dailySales.push({ id: doc.id, ...doc.data() });
                     });
                     
-                    // Nrtbouhom b wa9t bash ykouno nafss tartib f pc w ipad
-                    dailySales.sort((a, b) => a.timestamp - b.timestamp);
+                    // Nrtbouhom 3la hssab r9am l'ticket (mach bel wa9t bach myw9e3 ta mochkil)
+                    dailySales.sort((a, b) => a.ticketNumber - b.ticketNumber);
 
                     updateTicketNumber();
                     if(!document.getElementById('reportModal').classList.contains('hidden')){
@@ -245,15 +204,16 @@
                     }
                 }, (error) => {
                      console.error("Firebase Error:", error);
-                     statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Err Sync';
-                     statusEl.className = "flex items-center gap-1 text-xs bg-amber-900/50 text-amber-400 px-2 py-1 rounded-full ml-2";
+                     // Hna ghadi ykteb lik f chacha chno mochkil exactement ila kan
+                     statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Err: ${error.message}`;
+                     statusEl.className = "flex items-center gap-1 text-xs bg-red-900/50 text-red-400 px-2 py-1 rounded-full ml-2 max-w-[200px] overflow-hidden text-ellipsis";
                 });
             } else {
-                signInAnonymously(auth).catch(error => console.error("Auth Error:", error));
+                statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Hors Ligne`;
+                statusEl.className = "flex items-center gap-1 text-xs bg-red-900/50 text-red-400 px-2 py-1 rounded-full ml-2 max-w-[200px] overflow-hidden text-ellipsis";
             }
         });
 
-        // --- RENDU UI INITIAL ---
         window.activeWorker = activeWorker; 
         
         function initUI() {
@@ -263,7 +223,6 @@
         }
 
         function updateTicketNumber() {
-            // Le ticket number kaytzad automatiquement 3la 7sab ch7al mn ticket fl caisse dyal lyoum
             currentTicketNumber = dailySales.length + 1;
             document.getElementById('ticketNumberDisplay').innerText = '#' + String(currentTicketNumber).padStart(4, '0');
         }
@@ -277,21 +236,15 @@
         function renderWorkers() {
             const container = document.getElementById('workerSelection');
             container.innerHTML = '<span class="text-sm font-semibold text-slate-400 mr-2 whitespace-nowrap">Chkoun li khedam ?</span>';
-            
             WORKERS.forEach(worker => {
                 const btn = document.createElement('button');
                 btn.onclick = () => window.setActiveWorker(worker);
-                
-                if (activeWorker === worker) {
-                    btn.className = "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap bg-blue-500 text-white shadow-md scale-105";
-                } else {
-                    btn.className = "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap bg-slate-700 text-slate-300 hover:bg-slate-600";
-                }
-                
+                btn.className = activeWorker === worker 
+                    ? "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap bg-blue-500 text-white shadow-md scale-105"
+                    : "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap bg-slate-700 text-slate-300 hover:bg-slate-600";
                 btn.innerHTML = `<i class="fa-solid fa-user-circle"></i> ${worker}`;
                 container.appendChild(btn);
             });
-            
             document.getElementById('activeWorkerDisplay').innerText = activeWorker;
             const helperText = document.getElementById('cartHelperText');
             if(helperText) helperText.innerText = `Khtar chi service bach tzidou l ${activeWorker}.`;
@@ -300,15 +253,11 @@
         function renderServices() {
             const container = document.getElementById('servicesGrid');
             container.innerHTML = '';
-            
             SERVICES.forEach(service => {
                 const btn = document.createElement('button');
                 btn.className = `${service.color} border-2 rounded-xl p-3 md:p-4 h-24 md:h-28 flex flex-col justify-center items-center shadow-sm active:scale-95 transition-transform`;
                 btn.onclick = () => window.addToCart(service);
-                btn.innerHTML = `
-                    <span class="font-bold text-center leading-tight mb-1 md:mb-2 text-sm md:text-base">${service.name}</span>
-                    <span class="text-base md:text-lg font-black bg-white/50 px-2 md:px-3 py-0.5 rounded-full">${service.price} Dhs</span>
-                `;
+                btn.innerHTML = `<span class="font-bold text-center leading-tight mb-1 md:mb-2 text-sm md:text-base">${service.name}</span><span class="text-base md:text-lg font-black bg-white/50 px-2 md:px-3 py-0.5 rounded-full">${service.price} Dhs</span>`;
                 container.appendChild(btn);
             });
         }
@@ -337,29 +286,19 @@
         function renderCart() {
             const container = document.getElementById('cartContainer');
             if (cart.length === 0) {
-                container.innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center text-gray-400 space-y-3">
-                        <i class="fa-solid fa-cart-arrow-down text-4xl opacity-20"></i>
-                        <p class="font-medium text-center">Ticket khawi.</p>
-                        <p class="text-sm text-center px-4" id="cartHelperText">Khtar chi service bach tzidou l ${activeWorker}.</p>
-                    </div>
-                `;
+                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-400 space-y-3"><i class="fa-solid fa-cart-arrow-down text-4xl opacity-20"></i><p class="font-medium text-center">Ticket khawi.</p><p class="text-sm text-center px-4" id="cartHelperText">Khtar chi service bach tzidou l ${activeWorker}.</p></div>`;
                 document.getElementById('cartTotal').innerText = "0.00";
                 return;
             }
 
             let html = '<ul class="space-y-2">';
             let total = 0;
-            
             cart.forEach(item => {
                 const itemTotal = item.price * item.qty;
                 total += itemTotal;
-                
                 html += `
                     <li class="flex flex-col sm:flex-row sm:items-center justify-between p-2 border border-gray-100 rounded-lg bg-gray-50">
-                        <div class="flex-1 mb-2 sm:mb-0">
-                            <p class="font-bold text-slate-800 text-sm">${item.name}</p>
-                        </div>
+                        <div class="flex-1 mb-2 sm:mb-0"><p class="font-bold text-slate-800 text-sm">${item.name}</p></div>
                         <div class="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
                             <div class="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm">
                                 <button onclick="window.updateQty(${item.id}, -1)" class="p-1 hover:bg-gray-100 text-gray-600 rounded-l-lg"><i class="fa-solid fa-minus text-xs"></i></button>
@@ -386,19 +325,18 @@
             });
         };
 
-        // --- FIREBASE PAIEMENT ---
         window.handlePayment = async (method) => {
             if (cart.length === 0) return window.showDialog('alert', 'Mola7ada', 'Ticket khawi. Zid chi service 9bel matkhales.');
             if (!currentUser) return window.showDialog('alert', 'Erreur', 'Mzl mconnectitch m3a serveur. Tsena chwiya.');
 
             const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             const now = new Date();
-            const dateStandard = getStandardDate(); // Format YYYY-MM-DD
+            const dateStandard = dateFormat1; // Dima katsauvegarda b format 08/04/2026
             const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
             const newSale = {
                 ticketNumber: currentTicketNumber,
-                date: dateStandard, // Muhima bash tchoufha f ga3 les appareils!
+                date: dateStandard,
                 time: timeStr,
                 items: [...cart],
                 total: total,
@@ -408,9 +346,8 @@
             };
 
             try {
-                // Sauvegarder f Firebase
-                await addDoc(collection(db, "sales"), newSale);
-                
+                const salesRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'sales');
+                await addDoc(salesRef, newSale);
                 window.showPrintPreviewTicket(newSale);
                 cart = [];
                 renderCart();
@@ -420,7 +357,6 @@
             }
         };
 
-        // --- DIALOGS ET IMPRESSION ---
         window.showDialog = (type, title, message, onConfirm = null) => {
             const dialog = document.getElementById('customDialog');
             document.getElementById('dialogTitle').innerText = title;
@@ -432,10 +368,7 @@
                 dBtns.innerHTML = `<button onclick="window.closeDialog()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900">Fhemtt (OK)</button>`;
             } else if (type === 'confirm') {
                 document.getElementById('dialogIcon').innerHTML = '<i class="fa-solid fa-circle-question text-blue-500"></i>';
-                dBtns.innerHTML = `
-                    <button onclick="window.closeDialog()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200">La, Rja3</button>
-                    <button id="confirmBtn" class="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600">Oui, Annuler</button>
-                `;
+                dBtns.innerHTML = `<button onclick="window.closeDialog()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200">La, Rja3</button><button id="confirmBtn" class="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600">Oui, Annuler</button>`;
                 document.getElementById('confirmBtn').onclick = onConfirm;
             }
             dialog.classList.remove('hidden');
@@ -447,35 +380,15 @@
             const dialog = document.getElementById('customDialog');
             document.getElementById('dialogTitle').innerText = "Ticket Validé !";
             document.getElementById('dialogIcon').innerHTML = '<i class="fa-solid fa-circle-check text-green-500"></i>';
-            document.getElementById('dialogMessage').innerHTML = `
-                <div class="mt-4 p-4 border border-dashed border-gray-400 bg-gray-50 text-left text-sm font-mono mx-auto max-w-[250px]">
-                    <div class="text-center font-bold mb-2 border-b border-gray-300 pb-2">Ticket N° ${String(saleData.ticketNumber).padStart(4, '0')}</div>
-                    <div>Coiffeur: ${saleData.worker}</div>
-                    <div class="mt-2 flex justify-between font-bold"><span>Total:</span><span>${saleData.total.toFixed(2)} MAD</span></div>
-                </div>
-            `;
+            document.getElementById('dialogMessage').innerHTML = `<div class="mt-4 p-4 border border-dashed border-gray-400 bg-gray-50 text-left text-sm font-mono mx-auto max-w-[250px]"><div class="text-center font-bold mb-2 border-b border-gray-300 pb-2">Ticket N° ${String(saleData.ticketNumber).padStart(4, '0')}</div><div>Coiffeur: ${saleData.worker}</div><div class="mt-2 flex justify-between font-bold"><span>Total:</span><span>${saleData.total.toFixed(2)} MAD</span></div></div>`;
             
-            // Preparer pour imprimante
-            const todayStrAffichage = new Date().toLocaleDateString('fr-FR');
             let itemsHTML = '';
             saleData.items.forEach(item => {
                 itemsHTML += `<tr><td class="py-1 text-left">${item.qty}x</td><td class="py-1 text-left pr-2">${item.name}</td><td class="text-right py-1">${(item.price * item.qty).toFixed(2)}</td></tr>`;
             });
 
-            document.getElementById('printZone').innerHTML = `
-                <div class="text-center mb-4"><h1 class="text-2xl font-black uppercase">BARBER LAHLOU</h1><p>123 Ave Mohammed V</p></div>
-                <div class="border-t border-b border-black border-dashed py-2 mb-2 text-xs">
-                    <p>Ticket N° : ${String(saleData.ticketNumber).padStart(4, '0')}</p><p>Date : ${todayStrAffichage} à ${saleData.time}</p><p>Coiffeur : <span class="font-bold">${saleData.worker}</span></p>
-                </div>
-                <table class="w-full mb-4"><tbody>${itemsHTML}</tbody></table>
-                <div class="border-t border-black border-dashed pt-2 mb-4 flex justify-between font-bold text-lg"><span>TOTAL TTC</span><span>${saleData.total.toFixed(2)} MAD</span></div>
-                <div class="text-center mt-6 text-xs"><p>Merci de votre visite !</p></div>
-            `;
-
-            document.getElementById('dialogButtons').innerHTML = `
-                <button onclick="window.closeDialog()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200">Fermer</button>
-                <button onclick="window.print()" class="flex-1 bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900"><i class="fa-solid fa-print"></i> Imprimer Vrai</button>
-            `;
+            document.getElementById('printZone').innerHTML = `<div class="text-center mb-4"><h1 class="text-2xl font-black uppercase">BARBER LAHLOU</h1><p>123 Ave Mohammed V</p></div><div class="border-t border-b border-black border-dashed py-2 mb-2 text-xs"><p>Ticket N° : ${String(saleData.ticketNumber).padStart(4, '0')}</p><p>Date : ${dateFormat1} à ${saleData.time}</p><p>Coiffeur : <span class="font-bold">${saleData.worker}</span></p></div><table class="w-full mb-4"><tbody>${itemsHTML}</tbody></table><div class="border-t border-black border-dashed pt-2 mb-4 flex justify-between font-bold text-lg"><span>TOTAL TTC</span><span>${saleData.total.toFixed(2)} MAD</span></div><div class="text-center mt-6 text-xs"><p>Merci de votre visite !</p></div>`;
+            document.getElementById('dialogButtons').innerHTML = `<button onclick="window.closeDialog()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200">Fermer</button><button onclick="window.print()" class="flex-1 bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900"><i class="fa-solid fa-print"></i> Imprimer Vrai</button>`;
             dialog.classList.remove('hidden');
         };
 
@@ -484,13 +397,11 @@
              const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
              const now = new Date();
              window.showPrintPreviewTicket({
-                ticketNumber: currentTicketNumber,
-                time: now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                ticketNumber: currentTicketNumber, time: now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
                 items: [...cart], total: total, method: "---", worker: activeWorker
              });
         };
 
-        // --- RAPPORTS ---
         window.openReport = () => {
             const content = document.getElementById('reportContent');
             if(dailySales.length === 0) {
@@ -512,52 +423,20 @@
                 let workersHTML = '';
                 WORKERS.forEach(w => {
                     const data = workersData[w];
-                    workersHTML += `
-                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-                          <div class="flex items-center gap-2 mb-3 border-b pb-2"><i class="fa-solid fa-user-circle text-blue-500"></i><span class="font-bold text-slate-800">${w}</span></div>
-                          <div class="mb-2"><p class="text-xs text-slate-500">Dkhel l'caisse :</p><p class="text-lg font-black text-slate-700">${data.total.toFixed(2)} MAD</p></div>
-                          <div class="bg-green-50 p-2 rounded border border-green-100"><p class="text-xs text-green-600 font-bold">7a9ou (50%) :</p><p class="text-lg font-black text-green-700">${(data.total / 2).toFixed(2)} MAD</p></div>
-                        </div>
-                    `;
+                    workersHTML += `<div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between"><div class="flex items-center gap-2 mb-3 border-b pb-2"><i class="fa-solid fa-user-circle text-blue-500"></i><span class="font-bold text-slate-800">${w}</span></div><div class="mb-2"><p class="text-xs text-slate-500">Dkhel l'caisse :</p><p class="text-lg font-black text-slate-700">${data.total.toFixed(2)} MAD</p></div><div class="bg-green-50 p-2 rounded border border-green-100"><p class="text-xs text-green-600 font-bold">7a9ou (50%) :</p><p class="text-lg font-black text-green-700">${(data.total / 2).toFixed(2)} MAD</p></div></div>`;
                 });
 
                 let ticketsHTML = '';
-                // Copie w tartib mn jdid lqdim bash yban mzn
-                const sortedSales = [...dailySales].sort((a, b) => b.timestamp - a.timestamp);
+                const sortedSales = [...dailySales].sort((a, b) => b.ticketNumber - a.ticketNumber);
                 
                 sortedSales.forEach(sale => {
                      let itemsStr = sale.items.map(i => `${i.qty}x ${i.name}`).join(' | ');
-                     ticketsHTML += `
-                        <div class="bg-white p-3 rounded-lg border border-gray-200 flex justify-between items-center shadow-sm mb-2">
-                            <div>
-                              <p class="font-bold text-slate-800 flex items-center gap-2">Ticket #${String(sale.ticketNumber).padStart(4, '0')} <span class="text-xs text-slate-400"><i class="fa-regular fa-clock"></i> ${sale.time}</span><span class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-semibold border">${sale.worker}</span></p>
-                              <p class="text-sm text-slate-500 mt-1">${itemsStr}</p>
-                            </div>
-                            <div class="text-right">
-                              <p class="font-bold text-lg">${sale.total.toFixed(2)} MAD</p>
-                              <span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-gray-200 text-gray-700">${sale.method}</span>
-                            </div>
-                        </div>
-                     `;
+                     ticketsHTML += `<div class="bg-white p-3 rounded-lg border border-gray-200 flex justify-between items-center shadow-sm mb-2"><div><p class="font-bold text-slate-800 flex items-center gap-2">Ticket #${String(sale.ticketNumber).padStart(4, '0')} <span class="text-xs text-slate-400"><i class="fa-regular fa-clock"></i> ${sale.time}</span><span class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-semibold border">${sale.worker}</span></p><p class="text-sm text-slate-500 mt-1">${itemsStr}</p></div><div class="text-right"><p class="font-bold text-lg">${sale.total.toFixed(2)} MAD</p><span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-gray-200 text-gray-700">${sale.method}</span></div></div>`;
                 });
 
-                content.innerHTML = `
-                    <div class="bg-slate-800 text-white p-5 rounded-xl shadow-sm mb-6 flex justify-between items-center">
-                      <div><p class="text-slate-300 font-semibold mb-1">Total l'7anout Kamel (CA)</p><p class="text-3xl font-black">${totalCA.toFixed(2)} <span class="text-lg">MAD</span></p></div>
-                      <div class="text-right"><p class="text-slate-300 font-semibold mb-1">7aq l'Patron Global (50%)</p><p class="text-2xl font-bold text-green-400">${(totalCA / 2).toFixed(2)} MAD</p></div>
-                    </div>
-                    <h4 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Hsab dyal kol Coiffeur</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">${workersHTML}</div>
-                    <h4 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Détails des Tickets</h4>
-                    <div>${ticketsHTML}</div>
-                `;
+                content.innerHTML = `<div class="bg-slate-800 text-white p-5 rounded-xl shadow-sm mb-6 flex justify-between items-center"><div><p class="text-slate-300 font-semibold mb-1">Total l'7anout Kamel (CA)</p><p class="text-3xl font-black">${totalCA.toFixed(2)} <span class="text-lg">MAD</span></p></div><div class="text-right"><p class="text-slate-300 font-semibold mb-1">7aq l'Patron Global (50%)</p><p class="text-2xl font-bold text-green-400">${(totalCA / 2).toFixed(2)} MAD</p></div></div><h4 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Hsab dyal kol Coiffeur</h4><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">${workersHTML}</div><h4 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Détails des Tickets</h4><div>${ticketsHTML}</div>`;
 
-                let printRapportHTML = `
-                    <h1 class="text-xl font-bold text-center uppercase mb-2">RAPPORT CAISSE CLOUD</h1>
-                    <p class="text-center mb-4">${new Date().toLocaleDateString('fr-FR')}</p>
-                    <div class="border-t border-b border-black py-2 mb-2"><p class="font-bold text-lg">CA TOTAL: ${totalCA.toFixed(2)} MAD</p><p>Part Patron (50%): ${(totalCA/2).toFixed(2)} MAD</p></div>
-                    <h2 class="font-bold mt-4 mb-1 border-b border-black">Détails Coiffeurs:</h2>
-                `;
+                let printRapportHTML = `<h1 class="text-xl font-bold text-center uppercase mb-2">RAPPORT CAISSE CLOUD</h1><p class="text-center mb-4">${dateFormat1}</p><div class="border-t border-b border-black py-2 mb-2"><p class="font-bold text-lg">CA TOTAL: ${totalCA.toFixed(2)} MAD</p><p>Part Patron (50%): ${(totalCA/2).toFixed(2)} MAD</p></div><h2 class="font-bold mt-4 mb-1 border-b border-black">Détails Coiffeurs:</h2>`;
                 WORKERS.forEach(w => {
                     const data = workersData[w];
                     printRapportHTML += `<div class="mb-2 text-xs"><p class="font-bold uppercase">- ${w} -</p><p>Dkhel: ${data.total.toFixed(2)} MAD</p><p>7a9ou: ${(data.total/2).toFixed(2)} MAD</p></div>`;
@@ -573,11 +452,7 @@
              window.print();
         };
 
-        // Lancer UI
         initUI();
     </script>
 </body>
 </html>
-
-
-```
