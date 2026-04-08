@@ -2,109 +2,137 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BARBER LAHLOU - Caisse Cloud Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BARBER LAHLOU - POS ULTIMATE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         @media print { .no-print { display: none !important; } .print-only { display: block !important; } body { background: white; margin: 0; padding: 0; } }
         .print-only { display: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .pulse-green { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .shadow-soft { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
     </style>
 </head>
-<body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden">
+<body class="bg-[#F8FAFC] text-slate-900 h-screen flex flex-col overflow-hidden">
 
-    <div id="printZone" class="print-only text-black bg-white w-full max-w-[80mm] mx-auto p-4 text-sm font-mono leading-tight"></div>
+    <!-- ZONE D'IMPRESSION -->
+    <div id="printZone" class="print-only text-black bg-white w-full max-w-[80mm] mx-auto p-4 text-[10px] font-mono leading-tight"></div>
 
     <!-- MODAL RAPPORT -->
-    <div id="reportModal" class="no-print fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 hidden">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-            <div class="bg-slate-900 p-5 text-white flex justify-between items-center">
-                <h2 class="text-xl font-bold"><i class="fa-solid fa-chart-pie mr-2 text-blue-400"></i> Rapport Cloud</h2>
-                <button onclick="closeReport()" class="hover:bg-slate-800 p-2 rounded-full"><i class="fa-solid fa-xmark text-xl"></i></button>
+    <div id="reportModal" class="no-print fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+            <div class="bg-slate-900 p-4 md:p-6 text-white flex justify-between items-center">
+                <div class="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+                    <h2 class="text-lg md:text-xl font-black uppercase italic"><i class="fa-solid fa-clock-rotate-left mr-2 text-blue-400"></i> Historique</h2>
+                    <div class="flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700">
+                        <i class="fa-solid fa-calendar-day text-slate-400 ml-3 mr-2"></i>
+                        <input type="date" id="reportDatePicker" onchange="window.changeReportDate(this.value)" class="bg-transparent text-white px-2 py-1.5 text-xs md:text-sm font-bold outline-none cursor-pointer uppercase tracking-widest w-fit appearance-none">
+                    </div>
+                </div>
+                <button onclick="window.closeReport()" class="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-colors"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="flex-1 overflow-y-auto p-6 bg-slate-50" id="reportContent"></div>
-            <div class="p-4 bg-white border-t flex justify-end">
-                <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2 rounded-lg font-bold"><i class="fa-solid fa-print mr-2"></i> Imprimer Rapport</button>
+            <div class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50" id="reportContent"></div>
+            <div class="p-4 md:p-6 bg-white border-t flex justify-between items-center">
+                <button onclick="window.resetDay()" class="text-red-500 hover:bg-red-50 px-4 py-2.5 md:px-6 md:py-3 rounded-2xl font-black uppercase text-[10px] md:text-xs border border-red-100 transition-all"><i class="fa-solid fa-trash-can mr-1 md:mr-2"></i> Reset Nhar</button>
+                <button onclick="window.print()" class="bg-slate-900 text-white px-5 py-2.5 md:px-8 md:py-3 rounded-2xl font-black uppercase text-[10px] md:text-sm shadow-lg active:scale-95 transition-all"><i class="fa-solid fa-print mr-1 md:mr-2"></i> Imprimer</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL DIALOG -->
-    <div id="customDialog" class="no-print fixed inset-0 bg-black/70 z-[100] flex justify-center items-center p-4 hidden">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
-            <div id="dialogIcon" class="text-4xl mb-4"></div>
-            <h3 id="dialogTitle" class="text-xl font-bold text-slate-800 mb-2"></h3>
-            <div id="dialogMessage" class="text-slate-600 mb-6"></div>
-            <div class="flex gap-3 w-full" id="dialogButtons"></div>
+    <div id="customDialog" class="no-print fixed inset-0 bg-black/70 z-[100] flex justify-center items-center p-4 hidden backdrop-blur-md">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm p-8 text-center border border-slate-100">
+            <div id="dialogIcon" class="text-5xl mb-4"></div>
+            <h3 id="dialogTitle" class="text-xl font-black text-slate-900 mb-2 uppercase italic"></h3>
+            <div id="dialogMessage" class="text-slate-500 mb-8 text-sm font-medium"></div>
+            <div class="flex gap-4 w-full" id="dialogButtons"></div>
         </div>
     </div>
 
-    <!-- APP PRINCIPALE -->
+    <!-- INTERFACE PRINCIPALE -->
     <div class="no-print flex flex-col h-full">
-        <header class="bg-slate-900 text-white shadow-md z-10 flex flex-col">
-            <div class="p-3 md:p-4 flex justify-between items-center border-b border-slate-700">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-scissors text-blue-400 text-2xl"></i>
-                    <h1 class="text-xl md:text-2xl font-bold tracking-wider uppercase">BARBER LAHLOU</h1>
-                    <div id="syncIndicator" class="flex items-center gap-1 text-[10px] md:text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700">
-                        <i class="fa-solid fa-rotate fa-spin"></i> Sync...
+        <header class="bg-slate-900 text-white shadow-xl z-20">
+            <div class="px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-500/20"><i class="fa-solid fa-scissors text-white"></i></div>
+                    <div>
+                        <h1 class="text-lg font-black tracking-tighter uppercase italic leading-none">BARBER LAHLOU</h1>
+                        <div id="syncIndicator" class="flex items-center gap-1.5 text-[9px] text-slate-500 mt-1 uppercase font-black tracking-widest">
+                            <i class="fa-solid fa-circle-notch fa-spin"></i> Sync en cours
+                        </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="location.reload()" class="bg-slate-800 p-2 rounded-lg text-slate-400 hover:text-white" title="Refresh Sync">
-                        <i class="fa-solid fa-arrows-rotate"></i>
-                    </button>
-                    <button onclick="openReport()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 md:px-4 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg text-sm md:text-base">
-                        <i class="fa-solid fa-chart-column"></i> <span class="hidden sm:inline">Caisse</span>
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block mr-2">
+                        <p id="topDateDisplay" class="text-[10px] font-black text-blue-400 uppercase tracking-widest"></p>
+                        <p id="topClockDisplay" class="text-xs font-black text-white font-mono"></p>
+                    </div>
+                    <button onclick="openReport()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest border border-slate-700 transition-colors">
+                        <i class="fa-solid fa-database mr-1"></i> Caisse
                     </button>
                 </div>
             </div>
             
-            <div class="bg-slate-800 px-4 py-2 flex items-center gap-2 overflow-x-auto hide-scrollbar" id="workerSelection">
-                <span class="text-sm font-semibold text-slate-500 mr-2 uppercase text-[10px]">Staff:</span>
-            </div>
+            <div class="bg-slate-800/50 px-4 py-2 flex items-center gap-3 overflow-x-auto hide-scrollbar border-t border-slate-800" id="workerSelection"></div>
         </header>
 
         <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
-            <section class="w-full md:w-2/3 p-4 md:p-6 overflow-y-auto">
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" id="servicesGrid"></div>
+            <!-- CATALOGUE -->
+            <section class="w-full md:w-2/3 p-4 md:p-6 overflow-y-auto bg-slate-50/50">
+                <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="servicesGrid"></div>
             </section>
 
-            <section class="w-full md:w-1/3 bg-white border-t md:border-t-0 md:border-l border-gray-200 flex flex-col h-[55vh] md:h-auto shadow-2xl">
-                <div class="p-3 border-b border-gray-200 bg-blue-50 flex items-center justify-between">
+            <!-- SIDEBAR TICKET -->
+            <section class="w-full md:w-1/3 bg-white border-t md:border-t-0 md:border-l border-slate-200 flex flex-col h-[55vh] md:h-auto shadow-xl">
+                <div class="p-4 border-b border-slate-50 bg-[#F1F5F9] flex justify-between items-center">
                     <div>
-                        <h3 class="font-bold text-blue-900 text-sm">Ticket <span id="ticketNumberDisplay">#0001</span></h3>
-                        <p class="text-xs text-blue-600 font-semibold uppercase"><i class="fa-solid fa-user"></i> <span id="activeWorkerDisplay">SOUHAIL</span></p>
+                        <div class="flex items-center gap-2">
+                            <span id="ticketNumberDisplay" class="bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-md italic">#0001</span>
+                            <span class="text-[9px] font-black uppercase text-slate-400 tracking-widest">Ticket Client</span>
+                        </div>
+                        <h3 id="activeWorkerDisplay" class="text-lg font-black text-slate-900 uppercase mt-1 italic leading-none">SOUHAIL</h3>
                     </div>
                     <div class="text-right">
-                        <p id="clockDisplay" class="text-[10px] text-slate-500 font-mono"></p>
+                        <p id="clockDisplay" class="text-xs font-black text-slate-400 font-mono"></p>
                     </div>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-2 bg-white" id="cartContainer"></div>
+                <!-- Panier -->
+                <div class="flex-1 overflow-y-auto p-4" id="cartContainer"></div>
 
-                <div class="bg-slate-50 p-4 border-t border-gray-200">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-slate-500 font-bold uppercase text-xs tracking-widest">Total à payer</span>
-                        <span class="text-3xl font-black text-slate-900"><span id="cartTotal">0.00</span> <span class="text-sm">MAD</span></span>
+                <!-- Footer Caisse -->
+                <div class="p-5 bg-white border-t border-slate-100 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+                    <div class="flex justify-between items-end mb-4 px-1">
+                        <span class="text-[9px] font-black uppercase text-slate-400 tracking-tighter italic">Total à encaisser</span>
+                        <div class="text-right leading-none">
+                            <span id="cartTotal" class="text-4xl font-black text-slate-900 tracking-tighter">0.00</span>
+                            <span class="text-xs font-black text-slate-400 ml-1 italic">MAD</span>
+                        </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3 mb-3">
-                        <button onclick="handlePayment('Espèces')" class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-xl font-bold flex flex-col items-center gap-1 shadow-md active:scale-95 transition-all">
-                            <i class="fa-solid fa-money-bill-wave text-xl"></i> <span>Espèces</span>
+                    <!-- Payment -->
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <button onclick="handlePayment('Espèces')" class="bg-emerald-500 hover:bg-emerald-600 text-white h-16 rounded-2xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition-all shadow-emerald-500/20">
+                            <i class="fa-solid fa-money-bill-1-wave text-lg mb-1"></i>
+                            <span class="font-black uppercase text-[9px] tracking-widest">Espèces</span>
                         </button>
-                        <button onclick="handlePayment('Carte')" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-bold flex flex-col items-center gap-1 shadow-md active:scale-95 transition-all">
-                            <i class="fa-solid fa-credit-card text-xl"></i> <span>Carte TPE</span>
+                        <button onclick="handlePayment('Carte TPE')" class="bg-blue-600 hover:bg-blue-700 text-white h-16 rounded-2xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition-all shadow-blue-500/20">
+                            <i class="fa-solid fa-credit-card text-lg mb-1"></i>
+                            <span class="font-black uppercase text-[9px] tracking-widest">Carte</span>
                         </button>
                     </div>
 
-                    <div class="flex gap-2">
-                        <button onclick="confirmClearCart()" class="w-1/3 bg-white border border-red-100 text-red-500 p-2 rounded-xl font-bold text-xs uppercase">Annuler</button>
-                        <button onclick="showPrintPreview()" class="w-2/3 bg-slate-800 text-white p-2 rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-2"><i class="fa-solid fa-print"></i> Ticket</button>
+                    <!-- Options -->
+                    <div class="flex gap-3">
+                        <button onclick="confirmClearCart()" class="flex-1 bg-slate-50 text-slate-400 py-3 rounded-xl font-black uppercase text-[9px] tracking-widest border border-slate-100 active:scale-95 transition-all">
+                            <i class="fa-solid fa-rotate-left mr-1 text-[8px]"></i> Annuler
+                        </button>
+                        <button onclick="showPrintPreview()" class="flex-[1.5] bg-slate-900 text-white py-3 rounded-xl font-black uppercase text-[9px] tracking-widest shadow-lg active:scale-95 flex items-center justify-center gap-2 transition-all">
+                            <i class="fa-solid fa-print"></i> Aperçu
+                        </button>
                     </div>
                 </div>
             </section>
@@ -113,107 +141,139 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIGURATION FIREBASE EXACTE BEDELNA L'API KEY
-        const firebaseConfig = {
-            apiKey: "AIzaSyBdNRfkM94j2NWCBnnnnjYnuzjdfwKdIIk",
-            authDomain: "barber-lahlou-caisse.firebaseapp.com",
-            projectId: "barber-lahlou-caisse",
-            storageBucket: "barber-lahlou-caisse.firebasestorage.app",
-            messagingSenderId: "637483895643",
-            appId: "1:637483895643:web:3aa1f4ef4463b54587a87e",
-            measurementId: "G-X4FR70Q6JK"
-        };
+        // Global Firebase Config handling for Canvas Environment
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "",
+                authDomain: "barber-lahlou-caisse.firebaseapp.com",
+                projectId: "barber-lahlou-caisse",
+                storageBucket: "barber-lahlou-caisse.firebasestorage.app",
+                messagingSenderId: "637483895643",
+                appId: "1:637483895643:web:3aa1f4ef4463b54587a87e"
+            };
 
         const WORKERS = ['SOUHAIL', 'HAITAM', 'FAYSAL', 'HATIM'];
         const SERVICES = [
-            { id: 1, name: 'Coupe Homme', price: 50, color: 'bg-blue-50 border-blue-200 text-blue-700' },
-            { id: 2, name: 'Coupe + Barbe', price: 70, color: 'bg-blue-50 border-blue-200 text-blue-700' },
-            { id: 3, name: 'Tracé Barbe', price: 30, color: 'bg-blue-50 border-blue-200 text-blue-700' },
-            { id: 4, name: 'Coupe Enfant', price: 40, color: 'bg-green-50 border-green-200 text-green-700' },
-            { id: 5, name: 'Coupe Femme', price: 100, color: 'bg-pink-50 border-pink-200 text-pink-700' },
-            { id: 6, name: 'Brushing Court', price: 60, color: 'bg-pink-50 border-pink-200 text-pink-700' },
-            { id: 7, name: 'Brushing Long', price: 100, color: 'bg-pink-50 border-pink-200 text-pink-700' },
-            { id: 8, name: 'Coloration', price: 250, color: 'bg-purple-50 border-purple-200 text-purple-700' },
-            { id: 9, name: 'Soin Kératine', price: 500, color: 'bg-purple-50 border-purple-200 text-purple-700' }
+            { id: 1, name: 'Coupe Homme', price: 50, color: 'bg-white border-slate-100 hover:border-blue-400 text-slate-800', icon: 'fa-scissors' },
+            { id: 2, name: 'Coupe + Barbe', price: 70, color: 'bg-white border-slate-100 hover:border-blue-400 text-slate-800', icon: 'fa-user-tie' },
+            { id: 3, name: 'Tracé Barbe', price: 30, color: 'bg-white border-slate-100 hover:border-blue-400 text-slate-800', icon: 'fa-cut' },
+            { id: 4, name: 'Coupe Enfant', price: 40, color: 'bg-white border-slate-100 hover:border-green-400 text-slate-800', icon: 'fa-child-reaching' },
+            { id: 5, name: 'Brushing', price: 40, color: 'bg-white border-slate-100 hover:border-pink-400 text-slate-800', icon: 'fa-wind' },
+            { id: 6, name: 'Soin Visage', price: 80, color: 'bg-white border-slate-100 hover:border-emerald-400 text-slate-800', icon: 'fa-spa' },
+            { id: 7, name: 'Gommage', price: 35, color: 'bg-white border-slate-100 hover:border-emerald-400 text-slate-800', icon: 'fa-hands-bubbles' },
+            { id: 8, name: 'Soin Protéine', price: 300, color: 'bg-white border-slate-100 hover:border-purple-400 text-slate-800', icon: 'fa-pump-medical' },
+            { id: 9, name: 'Soin Kératine', price: 500, color: 'bg-white border-slate-100 hover:border-purple-400 text-slate-800', icon: 'fa-spray-can-sparkles' },
+            { id: 10, name: 'Coloration', price: 250, color: 'bg-white border-slate-100 hover:border-purple-400 text-slate-800', icon: 'fa-fill-drip' },
+            { id: 11, name: 'Pack VIP', price: 150, color: 'bg-gradient-to-br from-amber-100 to-amber-200 border-amber-300 text-amber-900 hover:border-amber-400', icon: 'fa-crown' }
         ];
+
+        const marocFormat = { timeZone: 'Africa/Casablanca', hour12: false };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'barber-lahlou-app';
+
+        function getISOStaticDate() {
+             const d = new Date();
+             const year = new Intl.DateTimeFormat('en', { year: 'numeric', ...marocFormat }).format(d);
+             const month = new Intl.DateTimeFormat('en', { month: '2-digit', ...marocFormat }).format(d);
+             const day = new Intl.DateTimeFormat('en', { day: '2-digit', ...marocFormat }).format(d);
+             return `${year}-${month}-${day}`;
+        }
 
         let activeWorker = WORKERS[0];
         let cart = [];
         let dailySales = [];
+        let reportSales = [];
+        let currentReportDate = getISOStaticDate();
+        let reportUnsubscribe = null;
         let db;
-        const appId = "barber-lahlou-caisse";
+        let auth;
 
-        try {
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            db = getFirestore(app);
-
-            // SYNC REAL-TIME
-            onAuthStateChanged(auth, (user) => {
-                const syncEl = document.getElementById('syncIndicator');
-                if (user) {
-                    const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    
-                    const q = query(salesRef, where("date", "==", todayStr));
-                    
-                    onSnapshot(q, (snapshot) => {
-                        dailySales = [];
-                        snapshot.forEach((doc) => dailySales.push({ id: doc.id, ...doc.data() }));
-                        
-                        syncEl.innerHTML = `<i class="fa-solid fa-cloud-check text-green-400"></i> Cloud Sync: ${dailySales.length} tickets`;
-                        syncEl.className = "flex items-center gap-1 text-[10px] md:text-xs bg-green-900/20 text-green-400 px-2 py-1 rounded-full border border-green-800/30";
-                        
-                        updateTicketNumber();
-                        if(!document.getElementById('reportModal').classList.contains('hidden')) openReport();
-                    }, (err) => {
-                        console.error("Firestore Error:", err);
-                        syncEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> Err Sync`;
-                    });
-                } else {
-                    signInAnonymously(auth).catch(err => {
-                        console.error("Auth Error:", err);
-                        const syncEl = document.getElementById('syncIndicator');
-                        syncEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> API Key Error`;
-                        syncEl.className = "flex items-center gap-1 text-[10px] md:text-xs bg-red-900/20 text-red-400 px-2 py-1 rounded-full border border-red-800/30";
-                    });
-                }
-            });
-        } catch (e) {
-            console.error("Firebase Init Error:", e);
+        function getFriendlyDate() {
+            const d = new Date();
+            const dayName = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', ...marocFormat }).format(d).toUpperCase();
+            const dayNum = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', ...marocFormat }).format(d);
+            const monthNum = new Intl.DateTimeFormat('fr-FR', { month: '2-digit', ...marocFormat }).format(d);
+            const yearNum = new Intl.DateTimeFormat('fr-FR', { year: 'numeric', ...marocFormat }).format(d);
+            return `${dayName} ${dayNum}/${monthNum}/${yearNum}`;
         }
 
-        // UI ACTIONS
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        const initAuth = async () => {
+          try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          } catch (e) {
+            console.error("Auth error:", e);
+          }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            const syncEl = document.getElementById('syncIndicator');
+            if (user && syncEl) {
+                const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
+                const todaySync = getISOStaticDate();
+                const q = query(salesRef, where("date", "==", todaySync));
+                
+                onSnapshot(q, (snapshot) => {
+                    dailySales = [];
+                    snapshot.forEach((doc) => dailySales.push({ id: doc.id, ...doc.data() }));
+                    syncEl.innerHTML = `<i class="fa-solid fa-cloud-check text-green-500 mr-1"></i> Connecté: ${dailySales.length} Tickets`;
+                    syncEl.className = "flex items-center text-[9px] text-green-500 mt-1 uppercase font-black tracking-widest";
+                    updateTicketNumber();
+                    if(!document.getElementById('reportModal').classList.contains('hidden')) openReport();
+                }, (err) => {
+                  console.error("Firestore error:", err);
+                  syncEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500 mr-1"></i> Error Sync`;
+                  syncEl.className = "flex items-center text-[9px] text-red-500 mt-1 uppercase font-black tracking-widest";
+                });
+            }
+        });
+
         function updateTicketNumber() {
-            const num = dailySales.length + 1;
-            document.getElementById('ticketNumberDisplay').innerText = '#' + String(num).padStart(4, '0');
+            const el = document.getElementById('ticketNumberDisplay');
+            if (el) el.innerText = '#' + String(dailySales.length + 1).padStart(4, '0');
         }
 
         window.setActiveWorker = (w) => { activeWorker = w; renderWorkers(); renderCart(); };
 
         function renderWorkers() {
             const container = document.getElementById('workerSelection');
-            container.innerHTML = '<span class="text-sm font-semibold text-slate-500 mr-2 uppercase text-[10px]">Staff:</span>';
+            if (!container) return;
+            container.innerHTML = '';
             WORKERS.forEach(w => {
                 const btn = document.createElement('button');
                 btn.onclick = () => window.setActiveWorker(w);
-                btn.className = `px-4 py-2 rounded-full font-bold text-xs transition-all ${activeWorker === w ? 'bg-blue-500 text-white shadow-lg scale-105' : 'bg-slate-700 text-slate-400'}`;
-                btn.innerHTML = w;
+                btn.className = `px-5 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all ${activeWorker === w ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-700/50 text-slate-400 hover:text-white'}`;
+                btn.innerText = w;
                 container.appendChild(btn);
             });
-            document.getElementById('activeWorkerDisplay').innerText = activeWorker;
+            const display = document.getElementById('activeWorkerDisplay');
+            if (display) display.innerText = activeWorker;
         }
 
         function renderServices() {
             const container = document.getElementById('servicesGrid');
+            if (!container) return;
+            container.innerHTML = '';
             SERVICES.forEach(s => {
                 const btn = document.createElement('button');
-                btn.className = `${s.color} border rounded-2xl p-4 h-28 flex flex-col justify-center items-center shadow-sm active:scale-95 transition-all`;
+                btn.className = `${s.color} border-2 rounded-[1.5rem] p-3 h-32 flex flex-col justify-center items-center shadow-soft active:scale-95 transition-all group`;
                 btn.onclick = () => window.addToCart(s);
-                btn.innerHTML = `<span class="font-bold text-center leading-tight mb-2 text-sm">${s.name}</span><span class="text-lg font-black bg-white/50 px-3 py-0.5 rounded-full">${s.price} <small>Dh</small></span>`;
+                btn.innerHTML = `
+                    <i class="fa-solid ${s.icon} text-2xl mb-2 opacity-40 group-hover:opacity-100 transition-all group-hover:scale-110 group-hover:-translate-y-1"></i>
+                    <span class="font-black text-center leading-tight mb-2 text-[10px] uppercase italic">${s.name}</span>
+                    <span class="text-sm font-black bg-slate-900 text-white px-3 py-0.5 rounded-full shadow-md">${s.price} <small class="text-[8px] opacity-70">Dh</small></span>
+                `;
                 container.appendChild(btn);
             });
         }
@@ -233,19 +293,22 @@
 
         function renderCart() {
             const container = document.getElementById('cartContainer');
+            if (!container) return;
             if (cart.length === 0) {
-                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-300 space-y-2"><i class="fa-solid fa-receipt text-4xl opacity-20"></i><p class="text-xs uppercase font-bold tracking-widest">Panier Vide</p></div>`;
-                document.getElementById('cartTotal').innerText = "0.00";
+                container.innerHTML = `<p class="text-[9px] text-slate-300 font-black uppercase tracking-widest text-center mt-4 italic opacity-50">--- Panier Vide ---</p>`;
+                const totalEl = document.getElementById('cartTotal');
+                if (totalEl) totalEl.innerText = "0.00";
                 return;
             }
             let total = 0;
-            let html = '<ul class="space-y-2 p-1">';
+            let html = '<div class="space-y-2">';
             cart.forEach(i => {
                 total += i.price * i.qty;
-                html += `<li class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100"><div class="flex-1"><p class="font-bold text-slate-800 text-sm">${i.name}</p><p class="text-[10px] text-slate-400">${i.price} Dh/u</p></div><div class="flex items-center gap-2"><div class="flex items-center bg-white border border-slate-200 rounded-lg"><button onclick="window.updateQty(${i.id},-1)" class="px-2 py-1 text-slate-400"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="w-6 text-center font-bold text-xs">${i.qty}</span><button onclick="window.updateQty(${i.id},1)" class="px-2 py-1 text-slate-400"><i class="fa-solid fa-plus text-[10px]"></i></button></div><p class="w-14 text-right font-black text-slate-700 text-xs">${i.price*i.qty} Dh</p><button onclick="window.removeFromCart(${i.id})" class="text-red-300 hover:text-red-500 ml-1"><i class="fa-solid fa-xmark"></i></button></div></li>`;
+                html += `<div class="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-100 shadow-sm"><div class="flex-1"><p class="font-black text-slate-900 text-[10px] uppercase italic leading-none">${i.name}</p><p class="text-[8px] font-bold text-slate-400 mt-1">${i.price} MAD</p></div><div class="flex items-center gap-2"><div class="flex items-center bg-slate-50 p-1 rounded-lg"><button onclick="window.updateQty(${i.id},-1)" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-minus text-[8px]"></i></button><span class="w-6 text-center font-black text-[10px]">${i.qty}</span><button onclick="window.updateQty(${i.id},1)" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-plus text-[8px]"></i></button></div><p class="w-14 text-right font-black text-slate-900 text-[10px] italic">${i.price*i.qty} Dh</p></div></div>`;
             });
-            container.innerHTML = html + '</ul>';
-            document.getElementById('cartTotal').innerText = total.toFixed(2);
+            container.innerHTML = html + '</div>';
+            const totalEl = document.getElementById('cartTotal');
+            if (totalEl) totalEl.innerText = total.toFixed(2);
         }
 
         window.handlePayment = async (m) => {
@@ -254,8 +317,9 @@
             const now = new Date();
             const sale = {
                 ticketNumber: dailySales.length + 1,
-                date: now.toISOString().split('T')[0],
-                time: now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                dateFriendly: getFriendlyDate(),
+                date: getISOStaticDate(),
+                time: new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', ...marocFormat }).format(now),
                 items: [...cart],
                 total: total,
                 method: m,
@@ -266,46 +330,146 @@
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'sales'), sale);
                 window.showPrintPreviewTicket(sale);
                 cart = []; renderCart();
-            } catch (e) { alert("Erreur Sync: " + e.message); }
+            } catch (e) { console.error("Firestore add error:", e); }
         };
 
         window.showPrintPreviewTicket = (s) => {
             const d = document.getElementById('customDialog');
-            document.getElementById('dialogTitle').innerText = "Ticket Validé";
-            document.getElementById('dialogIcon').innerHTML = '<i class="fa-solid fa-circle-check text-green-500"></i>';
-            document.getElementById('dialogMessage').innerHTML = `<div class="bg-gray-50 p-4 font-mono text-left text-xs border border-dashed border-gray-300"><p class="text-center font-bold text-lg mb-2">BARBER LAHLOU</p><p>Ticket: #${String(s.ticketNumber).padStart(4,'0')}</p><p>Staff: ${s.worker}</p><div class="border-t border-gray-200 my-2 pt-2">` + s.items.map(i=>`<div class="flex justify-between"><span>${i.qty}x ${i.name}</span><span>${i.price*i.qty} Dh</span></div>`).join('') + `</div><div class="border-t border-gray-200 mt-2 pt-2 flex justify-between font-bold text-sm"><span>TOTAL</span><span>${s.total.toFixed(2)} MAD</span></div></div>`;
+            if (!d) return;
+            document.getElementById('dialogTitle').innerText = "Encaissement !";
+            document.getElementById('dialogIcon').innerHTML = '<div class="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 border border-emerald-200 shadow-sm"><i class="fa-solid fa-check text-2xl text-emerald-500"></i></div>';
+            document.getElementById('dialogMessage').innerHTML = `<p class="font-bold text-slate-500 text-xs">Le ticket de ${s.worker} est bien enregistré.</p>`;
             
-            document.getElementById('printZone').innerHTML = `<div class="text-center mb-4"><h1 class="text-2xl font-black">BARBER LAHLOU</h1><p>Caisse Cloud Pro</p></div><div class="border-t border-b border-black border-dashed py-2 mb-2 text-xs"><p>Ticket: #${String(s.ticketNumber).padStart(4,'0')}</p><p>Date: ${s.date} ${s.time}</p><p>Staff: ${s.worker}</p></div><table class="w-full text-xs">` + s.items.map(i=>`<tr><td>${i.qty}x ${i.name}</td><td class="text-right">${i.price*i.qty} Dh</td></tr>`).join('') + `</table><div class="border-t border-black border-dashed mt-4 pt-2 flex justify-between font-bold text-lg"><span>TOTAL</span><span>${s.total.toFixed(2)} Dh</span></div>`;
+            const pZone = document.getElementById('printZone');
+            if (pZone) {
+                pZone.innerHTML = `<div class="text-center mb-4"><h1 class="text-2xl font-black italic uppercase">BARBER LAHLOU</h1><p class="text-[8px] font-black uppercase tracking-[0.2em] opacity-60">Service Cloud Pro</p></div><div class="border-y border-black border-dashed py-3 mb-3 text-[9px] font-bold uppercase leading-relaxed"><div class="flex justify-between"><span>Ticket:</span><span>#${String(s.ticketNumber).padStart(4,'0')}</span></div><div class="flex justify-between font-black"><span>Date:</span><span>${s.dateFriendly}</span></div><div class="flex justify-between"><span>Heure:</span><span>${s.time}</span></div><div class="flex justify-between"><span>Staff:</span><span>${s.worker}</span></div></div><table class="w-full text-[9px] font-bold uppercase mb-4">` + s.items.map(i=>`<tr class="border-b border-slate-100"><td class="py-1.5">${i.qty}x ${i.name}</td><td class="py-1.5 text-right italic">${i.price*i.qty} Dh</td></tr>`).join('') + `</table><div class="flex justify-between font-black text-sm border-t-2 border-black border-double pt-3"><span>TOTAL TTC</span><span>${s.total.toFixed(2)} Dh</span></div><div class="text-center mt-8 text-[8px] font-black uppercase tracking-[0.2em]">Merci de votre confiance</div>`;
+            }
             
-            document.getElementById('dialogButtons').innerHTML = `<button onclick="window.closeDialog()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold">Fermer</button><button onclick="window.print()" class="flex-1 bg-slate-800 text-white p-3 rounded-xl font-bold"><i class="fa-solid fa-print"></i> Imprimer</button>`;
+            document.getElementById('dialogButtons').innerHTML = `<button onclick="window.closeDialog()" class="flex-1 bg-slate-50 py-3 rounded-xl font-black uppercase text-[10px] transition-all active:scale-95">Fermer</button><button onclick="window.print()" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-black uppercase text-[10px] shadow-lg transition-all active:scale-95"><i class="fa-solid fa-print mr-1"></i> Imprimer</button>`;
             d.classList.remove('hidden');
         };
 
+        window.changeReportDate = (dateVal) => {
+            if (!dateVal) return;
+            currentReportDate = dateVal;
+            window.loadReportData();
+        };
+
+        window.loadReportData = () => {
+            const content = document.getElementById('reportContent');
+            content.innerHTML = '<div class="flex justify-center items-center h-40 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin text-3xl"></i></div>';
+            
+            if (reportUnsubscribe) {
+                reportUnsubscribe();
+            }
+
+            const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
+            const q = query(salesRef, where("date", "==", currentReportDate));
+            
+            reportUnsubscribe = onSnapshot(q, (snapshot) => {
+                reportSales = [];
+                snapshot.forEach((doc) => reportSales.push({ id: doc.id, ...doc.data() }));
+                renderReportContent();
+            }, (err) => {
+                console.error("Report Sync Error:", err);
+                content.innerHTML = '<p class="text-center text-red-500">Erreur de chargement de l\'historique.</p>';
+            });
+        };
+
+        function renderReportContent() {
+            const content = document.getElementById('reportContent');
+            if (!content) return;
+            
+            if (reportSales.length === 0) {
+                content.innerHTML = '<p class="text-center py-20 text-slate-300 font-black uppercase italic tracking-widest text-xs opacity-50">--- Aucune vente ce jour ---</p>';
+                return;
+            }
+
+            const total = reportSales.reduce((s, v) => s + v.total, 0);
+            let workersHTML = '';
+            WORKERS.forEach(w => {
+                const wSales = reportSales.filter(s => s.worker === w);
+                const wTotal = wSales.reduce((s, v) => s + v.total, 0);
+                workersHTML += `<div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm"><p class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-2">${w}</p><div class="flex justify-between items-end"><p class="text-xl font-black text-slate-900 italic">${wTotal} <small class="text-[9px] font-bold">Dh</small></p><div class="bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 text-[8px] font-black text-blue-600 italic">50% = ${wTotal/2} Dh</div></div></div>`;
+            });
+
+            content.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"><div class="bg-slate-900 text-white p-6 rounded-3xl shadow-xl"><p class="text-slate-500 font-black text-[9px] uppercase tracking-widest mb-1 italic">Total Boutique</p><p class="text-4xl font-black italic tracking-tighter leading-tight">${total} <small class="text-lg opacity-40">MAD</small></p></div><div class="bg-blue-600 text-white p-6 rounded-3xl shadow-xl"><p class="text-blue-200 font-black text-[9px] uppercase tracking-widest mb-1 italic">Net Patron (50%)</p><p class="text-4xl font-black italic tracking-tighter leading-tight">${total/2} <small class="text-lg opacity-40">MAD</small></p></div></div><h3 class="font-black text-slate-300 mb-4 uppercase text-[9px] tracking-widest italic">Performance Journalière</h3><div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">${workersHTML}</div><h3 class="font-black text-slate-300 mb-4 uppercase text-[9px] tracking-widest italic">Liste des tickets</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">` + reportSales.slice().sort((a,b)=> b.timestamp - a.timestamp).map(s=>`<div class="bg-white p-3 lg:p-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="font-black text-[10px] text-slate-900 uppercase italic leading-none">#${String(s.ticketNumber).padStart(4,'0')} - ${s.worker}</p><p class="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">${s.time}</p></div><div class="flex items-center gap-3"><p class="font-black text-slate-900 text-[11px] italic">${s.total} Dh</p><button onclick="window.deleteTicket('${s.id}')" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button></div></div>`).join('') + `</div>`;
+        }
+
         window.openReport = () => {
             const modal = document.getElementById('reportModal');
-            const content = document.getElementById('reportContent');
-            if (dailySales.length === 0) {
-                content.innerHTML = '<div class="text-center py-20 text-slate-400"><i class="fa-solid fa-calendar-xmark text-6xl mb-4 opacity-10"></i><p class="font-bold uppercase tracking-widest">Aucune vente aujourd\'hui</p></div>';
-            } else {
-                const total = dailySales.reduce((s, v) => s + v.total, 0);
-                let workersHTML = '';
-                WORKERS.forEach(w => {
-                    const wTotal = dailySales.filter(s => s.worker === w).reduce((s, v) => s + v.total, 0);
-                    workersHTML += `<div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p class="text-xs text-slate-400 font-bold uppercase mb-2">${w}</p><div class="flex justify-between items-end"><p class="text-2xl font-black text-slate-800">${wTotal} <small class="text-xs">Dh</small></p><p class="text-xs text-green-600 font-bold bg-green-50 px-2 py-1 rounded-lg">50% = ${wTotal/2} Dh</p></div></div>`;
-                });
-                content.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"><div class="bg-slate-900 text-white p-6 rounded-3xl shadow-xl"><p class="text-slate-400 font-bold text-xs uppercase mb-1">Total l'7anout</p><p class="text-4xl font-black">${total} <small class="text-lg">MAD</small></p></div><div class="bg-blue-600 text-white p-6 rounded-3xl shadow-xl"><p class="text-blue-200 font-bold text-xs uppercase mb-1">Part Patron (50%)</p><p class="text-4xl font-black">${total/2} <small class="text-lg">MAD</small></p></div></div><h3 class="font-black text-slate-800 mb-4 uppercase text-sm tracking-widest">Détails Staff</h3><div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">${workersHTML}</div><h3 class="font-black text-slate-800 mb-4 uppercase text-sm tracking-widest">Tickets du jour</h3><div class="space-y-2">` + dailySales.slice().reverse().map(s=>`<div class="bg-white p-4 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm"><div><p class="font-bold text-sm text-slate-800">#${String(s.ticketNumber).padStart(4,'0')} - ${s.worker}</p><p class="text-[10px] text-slate-400">${s.time} | ${s.items.length} services</p></div><p class="font-black text-slate-800">${s.total} Dh</p></div>`).join('') + `</div>`;
+            if (!modal) return;
+            
+            const datePicker = document.getElementById('reportDatePicker');
+            if (datePicker && !datePicker.value) {
+                datePicker.value = currentReportDate;
             }
+            
+            window.loadReportData();
             modal.classList.remove('hidden');
+        };
+
+        window.deleteTicket = (id) => {
+            window.showDialog('confirm', 'Supprimer Ticket?', 'Wach bss7 bghiti tmsse7 had ticket bo7do?', async () => {
+                window.closeDialog();
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sales', id));
+                } catch (e) {
+                    console.error("Delete error:", e);
+                    alert("Erreur de suppression.");
+                }
+            });
+        };
+
+        window.resetDay = () => {
+            if (reportSales.length === 0) return;
+            window.showDialog('confirm', 'Reset Nhar?', 'Wach m2ked bghiti tmse7 GA3 tickets dyal had nhar? Had l3amaliya makatrje3ch.', async () => {
+                window.closeDialog();
+                try {
+                    for (const s of reportSales) {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sales', s.id));
+                    }
+                } catch (e) {
+                    console.error("Reset error:", e);
+                    alert("Erreur de réinitialisation.");
+                }
+            });
         };
 
         window.closeDialog = () => document.getElementById('customDialog').classList.add('hidden');
         window.closeReport = () => document.getElementById('reportModal').classList.add('hidden');
-        window.confirmClearCart = () => { if(cart.length>0) window.showDialog('confirm','Annuler?','Effacer le ticket en cours?',()=>{cart=[];renderCart();window.closeDialog();}); };
-        window.showDialog = (t,ti,m,onC) => { const d=document.getElementById('customDialog'); document.getElementById('dialogTitle').innerText=ti; document.getElementById('dialogMessage').innerText=m; document.getElementById('dialogIcon').innerHTML=t==='confirm'?'<i class="fa-solid fa-question-circle text-blue-500"></i>':''; document.getElementById('dialogButtons').innerHTML=`<button onclick="window.closeDialog()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold">Non</button><button id="diagOk" class="flex-1 bg-red-500 text-white p-3 rounded-xl font-bold">Oui</button>`; document.getElementById('diagOk').onclick=onC; d.classList.remove('hidden'); };
-        window.showPrintPreview = () => { if(cart.length>0) window.handlePayment('Ticket Seul'); };
+        window.confirmClearCart = () => { if(cart.length>0) window.showDialog('confirm','Annuler?','Effacer ce ticket?',()=>{cart=[];renderCart();window.closeDialog();}); };
+        
+        window.showDialog = (t,ti,m,onC) => { 
+            const d = document.getElementById('customDialog');
+            if (!d) return;
+            document.getElementById('dialogTitle').innerText = ti;
+            document.getElementById('dialogMessage').innerText = m;
+            document.getElementById('dialogIcon').innerHTML = t === 'confirm' ? '<div class="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 border border-blue-100 shadow-sm"><i class="fa-solid fa-circle-question text-2xl text-blue-500"></i></div>' : '';
+            document.getElementById('dialogButtons').innerHTML = `<button onclick="window.closeDialog()" class="flex-1 bg-slate-50 py-3 rounded-xl font-black uppercase text-[10px]">Non</button><button id="diagOk" class="flex-1 bg-rose-500 text-white py-3 rounded-xl font-black uppercase text-[10px] shadow-lg">Oui</button>`;
+            const okBtn = document.getElementById('diagOk');
+            if (okBtn) okBtn.onclick = onC;
+            d.classList.remove('hidden');
+        };
 
-        setInterval(() => { document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString('fr-FR'); }, 1000);
-        renderWorkers(); renderServices(); renderCart();
+        window.showPrintPreview = () => { 
+            if(cart.length>0) window.showDialog('confirm','Aperçu?','Voir le ticket avant encaisser?',()=>{ window.handlePayment('Ticket Provisoire'); }); 
+        };
+
+        setInterval(() => { 
+            const d = new Date();
+            const topClock = document.getElementById('topClockDisplay');
+            const topDate = document.getElementById('topDateDisplay');
+            const clock = document.getElementById('clockDisplay');
+            
+            if (topClock) topClock.innerText = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', ...marocFormat }).format(d);
+            if (topDate) topDate.innerText = getFriendlyDate();
+            if (clock) clock.innerText = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', ...marocFormat }).format(d);
+        }, 1000);
+        
+        renderWorkers(); 
+        renderServices(); 
+        renderCart();
     </script>
 </body>
 </html>
