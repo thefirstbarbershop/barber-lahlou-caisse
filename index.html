@@ -34,7 +34,7 @@
             <div class="w-24 h-24 bg-blue-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-500/30">
                 <i class="fa-solid fa-scissors text-4xl text-white"></i>
             </div>
-            <h1 class="text-4xl font-extrabold tracking-tighter uppercase italic leading-none mb-2">Barber Lahlou</h1>
+            <h1 class="text-4xl font-extrabold tracking-tighter uppercase italic leading-none mb-2 text-white">Barber Lahlou</h1>
             <p class="text-slate-500 text-xs font-bold tracking-[0.5em] uppercase">Private Access</p>
         </div>
         <div class="flex gap-5 mb-12" id="pinIndicator">
@@ -42,17 +42,17 @@
         </div>
         <p id="pinError" class="text-rose-500 font-bold mb-8 h-6 invisible uppercase text-[10px] tracking-widest">Code Incorrect</p>
         <div class="grid grid-cols-3 gap-6 max-w-[300px]">
-            <button onclick="keyTap('1')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90">1</button>
-            <button onclick="keyTap('2')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90">2</button>
-            <button onclick="keyTap('3')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90">3</button>
-            <button onclick="keyTap('4')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90">4</button>
-            <button onclick="keyTap('5')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90">5</button>
-            <button onclick="keyTap('6')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90">6</button>
-            <button onclick="keyTap('7')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90">7</button>
-            <button onclick="keyTap('8')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90">8</button>
-            <button onclick="keyTap('9')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90">9</button>
+            <button onclick="keyTap('1')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">1</button>
+            <button onclick="keyTap('2')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">2</button>
+            <button onclick="keyTap('3')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">3</button>
+            <button onclick="keyTap('4')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">4</button>
+            <button onclick="keyTap('5')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">5</button>
+            <button onclick="keyTap('6')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">6</button>
+            <button onclick="keyTap('7')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">7</button>
+            <button onclick="keyTap('8')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">8</button>
+            <button onclick="keyTap('9')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">9</button>
             <div class="invisible"></div>
-            <button onclick="keyTap('0')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90">0</button>
+            <button onclick="keyTap('0')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">0</button>
             <button onclick="keyBack()" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center text-slate-500 hover:text-white transition-all active:scale-95"><i class="fa-solid fa-delete-left text-2xl"></i></button>
         </div>
     </div>
@@ -64,10 +64,7 @@
                 <button onclick="logout()" class="w-11 h-11 rounded-xl glass flex items-center justify-center text-rose-500 hover:bg-rose-500/10 transition-all active:scale-90"><i class="fa-solid fa-power-off"></i></button>
                 <div class="h-8 w-px bg-white/10 mx-1"></div>
                 <div>
-                    <h1 class="text-xl font-black uppercase italic leading-none">Barber Lahlou</h1>
-                    <div id="syncBadge" class="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest leading-none bg-slate-900/50 px-2 py-1 rounded-full border border-white/5">
-                        <span id="syncDot" class="w-1.5 h-1.5 rounded-full bg-slate-600 animate-pulse"></span> <span id="syncText">Connecting...</span>
-                    </div>
+                    <h1 class="text-xl font-black uppercase italic leading-none text-white">Barber Lahlou</h1>
                 </div>
             </div>
             <div class="flex items-center gap-5">
@@ -100,7 +97,7 @@
                 <div class="flex-1 overflow-y-auto p-4 space-y-2 hide-scrollbar" id="cartContainer"></div>
                 <div class="p-6 bg-slate-950 border-t border-white/10">
                     <div class="flex justify-between items-end mb-8 px-2">
-                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Net</span>
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest text-slate-400">Total Net</span>
                         <div class="text-right leading-none">
                             <span id="cartTotal" class="text-5xl font-extrabold tracking-tighter text-white">0.00</span>
                             <span class="text-xs font-black text-blue-500 ml-1 italic">MAD</span>
@@ -164,13 +161,7 @@
         // =========================================================================
         // DATA & CONFIG
         // =========================================================================
-        const USERS = { 
-            '2020': { name: 'DRISS', role: 'ADMIN' }, 
-            '1212': { name: 'SOUHAIL', role: 'WORKER' }, 
-            '5050': { name: 'HATIM', role: 'WORKER' }, 
-            '2356': { name: 'HAITAM', role: 'WORKER' }, 
-            '9999': { name: 'FAYSSAL', role: 'WORKER' } 
-        };
+        const USERS = { '2020': { name: 'DRISS', role: 'ADMIN' }, '1212': { name: 'SOUHAIL', role: 'WORKER' }, '5050': { name: 'HATIM', role: 'WORKER' }, '2356': { name: 'HAITAM', role: 'WORKER' }, '9999': { name: 'FAYSSAL', role: 'WORKER' } };
         const WORKERS_LIST = ['SOUHAIL', 'HATIM', 'HAITAM', 'FAYSSAL', 'DRISS'];
         const SERVICES = [
             { id: 1, name: 'Coupe Homme', price: 50, icon: 'fa-scissors', color: 'text-blue-400' },
@@ -188,7 +179,7 @@
 
         let state = { user: null, activeWorker: '', cart: [], dailySales: [], reportSales: [], db: null, auth: null, appId: 'barber-lahlou-app' };
         
-        // MAMOUNE: TAAKED MEN L'API KEY DIYALAK HNA
+        // MAMOUNE: CONFIG API KEY
         const config = { 
             apiKey: "AIzaSyBdNRfkM94j2NWCBnnnjYnuzjdfwKdIIK", 
             authDomain: "barber-lahlou-caisse.firebaseapp.com", 
@@ -239,29 +230,14 @@
                 const userCred = await signInAnonymously(state.auth);
                 
                 if (userCred.user) {
-                    // Update Status to "Connecté"
-                    const badge = document.getElementById('syncBadge');
-                    const dot = document.getElementById('syncDot');
-                    const text = document.getElementById('syncText');
-                    
-                    dot.classList.replace('bg-slate-600', 'bg-emerald-500');
-                    dot.classList.add('shadow-[0_0_10px_#10b981]');
-                    text.innerText = "Connecté";
-                    text.classList.add('text-emerald-400');
-                    badge.classList.replace('text-slate-500', 'text-emerald-500');
-                    
                     const q = query(collection(state.db, 'artifacts', state.appId, 'public', 'data', 'sales'), where("date", "==", getTodayISO()));
                     onSnapshot(q, (snap) => {
                         state.dailySales = [];
                         snap.forEach(d => state.dailySales.push({ id: d.id, ...d.data() }));
-                        text.innerText = `Connecté: ${state.dailySales.length} Tickets`;
                         updateUI();
                     });
                 }
-            } catch (e) { 
-                console.error("Firebase Error", e); 
-                document.getElementById('syncText').innerText = "Offline Mode";
-            }
+            } catch (e) { console.error("Firebase Error", e); }
             renderWorkers(); renderServices(); updateUI();
         }
 
@@ -343,10 +319,10 @@
         function renderReportUI() {
             const cont = document.getElementById('reportContent'); const isP = state.user.role === 'ADMIN';
             let data = isP ? state.reportSales : state.reportSales.filter(s => s.worker === state.user.name);
-            if (data.length === 0) { cont.innerHTML = `<p class="text-center py-20 opacity-30 uppercase tracking-widest font-bold">Aucune Vente</p>`; return; }
+            if (data.length === 0) { cont.innerHTML = `<p class="text-center py-20 opacity-30 uppercase tracking-widest font-bold text-slate-500">Aucune Vente</p>`; return; }
             const total = data.reduce((s, v) => s + v.total, 0);
-            let header = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-blue-600 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden shadow-blue-500/20"><i class="fa-solid fa-vault absolute -right-4 -bottom-4 text-7xl opacity-10"></i><span class="text-[10px] font-black uppercase opacity-60 tracking-widest">Recette Totale</span><p class="text-5xl font-black italic mt-1 tracking-tighter">${total.toFixed(2)} Dh</p></div>` + (isP ? `<div class="bg-emerald-600 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden shadow-emerald-500/20"><i class="fa-solid fa-crown absolute -right-4 -bottom-4 text-7xl opacity-10"></i><span class="text-[10px] font-black uppercase opacity-60 tracking-widest">Net Patron (50%)</span><p class="text-5xl font-black italic mt-1 tracking-tighter">${(total/2).toFixed(2)} Dh</p></div>` : '') + `</div>`;
-            let grid = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">` + data.slice().sort((a,b)=>b.timestamp-a.timestamp).map(s => `<div class="glass p-5 rounded-3xl flex justify-between items-center border border-white/5"><div><p class="font-black text-xs uppercase italic text-white leading-none">#${String(s.ticketNumber).padStart(4,'0')} - ${s.worker}</p><p class="text-[9px] font-bold text-slate-500 uppercase mt-2 tracking-widest leading-none">${s.time}</p></div><div class="flex items-center"><span class="text-xl font-black italic text-blue-400 tracking-tighter">${s.total.toFixed(2)}</span>` + (isP ? `<button onclick="doDel('${s.id}')" class="ml-4 w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : '') + `</div></div>`).join('') + `</div>`;
+            let header = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-blue-600 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden shadow-blue-500/20"><i class="fa-solid fa-vault absolute -right-4 -bottom-4 text-7xl opacity-10 text-white"></i><span class="text-[10px] font-black uppercase opacity-60 tracking-widest text-white/80">Recette Totale</span><p class="text-5xl font-black italic mt-1 text-white">${total.toFixed(2)} Dh</p></div>` + (isP ? `<div class="bg-emerald-600 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden shadow-emerald-500/20"><i class="fa-solid fa-crown absolute -right-4 -bottom-4 text-7xl opacity-10 text-white"></i><span class="text-[10px] font-black uppercase opacity-60 tracking-widest text-white/80">Net Patron</span><p class="text-5xl font-black italic mt-1 text-white">${(total/2).toFixed(2)} Dh</p></div>` : '') + `</div>`;
+            let grid = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">` + data.slice().sort((a,b)=>b.timestamp-a.timestamp).map(s => `<div class="glass p-5 rounded-3xl flex justify-between items-center border border-white/5 shadow-md"><div><p class="font-black text-xs uppercase italic text-white leading-none">#${String(s.ticketNumber).padStart(4,'0')} - ${s.worker}</p><p class="text-[9px] font-bold text-slate-500 uppercase mt-2 tracking-widest leading-none">${s.time}</p></div><div class="flex items-center"><span class="text-xl font-black italic text-blue-400 tracking-tighter">${s.total.toFixed(2)}</span>` + (isP ? `<button onclick="doDel('${s.id}')" class="ml-4 w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center active:scale-90"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : '') + `</div></div>`).join('') + `</div>`;
             cont.innerHTML = header + grid; document.getElementById('resetBtn').classList.toggle('hidden', !isP);
         }
 
@@ -357,12 +333,14 @@
         // UTILS & DIALOGS
         // =========================================================================
         const getTodayISO = () => { const d = new Date(); const f = new Intl.DateTimeFormat('en', { year: 'numeric', month: '2-digit', day: '2-digit', ...marocTz }).formatToParts(d); const parts = {}; f.forEach(({type, value}) => parts[type] = value); return `${parts.year}-${parts.month}-${parts.day}`; };
-        window.showDialog = (t, ti, m, onC) => { const mo = document.getElementById('dialogModal'); document.getElementById('dialogTitle').innerText = ti; document.getElementById('dialogMsg').innerText = m; document.getElementById('dialogIcon').innerHTML = t === 'confirm' ? '<i class="fa-solid fa-circle-question text-blue-500"></i>' : '<i class="fa-solid fa-circle-check text-emerald-500"></i>'; const b = document.getElementById('dialogButtons'); b.innerHTML = `<button onclick="closeDialog()" class="flex-1 py-4 rounded-2xl glass text-[10px] font-black uppercase text-white/50 hover:text-white transition-all">Fermer</button>`; if(t === 'confirm') { const ok = document.createElement('button'); ok.className="flex-1 py-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-[10px] shadow-lg shadow-blue-500/20"; ok.innerText="Confirmer"; ok.onclick=onC; b.appendChild(ok); } mo.classList.remove('hidden'); };
+        window.showDialog = (t, ti, m, onC) => { const mo = document.getElementById('dialogModal'); document.getElementById('dialogTitle').innerText = ti; document.getElementById('dialogMsg').innerText = m; document.getElementById('dialogIcon').innerHTML = t === 'confirm' ? '<i class="fa-solid fa-circle-question text-blue-500"></i>' : '<i class="fa-solid fa-circle-check text-emerald-500"></i>'; const b = document.getElementById('dialogButtons'); b.innerHTML = `<button onclick="closeDialog()" class="flex-1 py-4 rounded-2xl glass text-[10px] font-black uppercase text-white/50 hover:text-white transition-all">Fermer</button>`; if(t === 'confirm') { const ok = document.createElement('button'); ok.className="flex-1 py-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-[10px] shadow-lg shadow-blue-500/20 active:scale-95"; ok.innerText="Confirmer"; ok.onclick=onC; b.appendChild(ok); } mo.classList.remove('hidden'); };
         window.closeDialog = () => document.getElementById('dialogModal').classList.add('hidden');
-        window.printPreview = () => { if(state.cart.length>0) { const total = state.cart.reduce((s,i)=>s+(SERVICES.find(x=>x.id===i.id).price*i.qty),0); showDialog('confirm', 'Aperçu', `Total: ${total.toFixed(2)} Dh. Imprimer l'aperçu ?`, () => { closeDialog(); finishSale('Espèces'); }); } };
+        window.printPreview = () => { if(state.cart.length>0) { const total = state.cart.reduce((s,i)=>s+(SERVICES.find(x=>x.id===i.id).price*i.qty),0); showDialog('confirm', 'Aperçu', `Total: ${total.toFixed(2)} Dh. Imprimer ?`, () => { closeDialog(); finishSale('Espèces'); }); } };
 
         setInterval(() => { if(state.user) updateUI(); }, 1000);
         const saved = localStorage.getItem('bl_sess'); if (saved) initApp(JSON.parse(saved));
     </script>
 </body>
 </html>
+
+```
