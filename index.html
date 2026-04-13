@@ -112,7 +112,7 @@
             { id: 'e6', name: 'Épilation Corps Complet', price: 250, sub: 'épilation', category: 'esthetique' },
             { id: 'e18', name: 'Vernis Normal', price: 30, sub: 'onglerie', category: 'esthetique' },
             { id: 'e7', name: 'Manucure Simple', price: 50, sub: 'onglerie', category: 'esthetique' },
-            { id: 'e8', name: 'Pédicure Spa', price: 80, sub: 'onglerie', category: 'esthetique' },
+            { id: 'e8', name: 'Pédicure Spa', price: 100, sub: 'onglerie', category: 'esthetique' }, // Mis à jour à 100 DH
             { id: 'e9', name: 'Vernis Permanent', price: 80, sub: 'onglerie', category: 'esthetique' },
             { id: 'e28', name: 'BIAB', price: 150, sub: 'onglerie', category: 'esthetique' },
             { id: 'e11', name: 'Faux Ongles + Perm.', price: 120, sub: 'onglerie', category: 'esthetique' },
@@ -132,7 +132,7 @@
 
         const App = () => {
             const [firebaseUser, setFirebaseUser] = useState(null);
-            const [activeStaff, setActiveStaff] = useState(null); // Utilisateur connecté
+            const [activeStaff, setActiveStaff] = useState(null); 
             const [pin, setPin] = useState('');
             const [pinError, setPinError] = useState(false);
 
@@ -251,7 +251,7 @@
                     timestamp: now.getTime(),
                     items: [...cart],
                     total: subtotal,
-                    workerName: activeStaff.name // Sauvegarde de l'employé qui a fait la vente
+                    workerName: activeStaff.name 
                 };
                 
                 try {
