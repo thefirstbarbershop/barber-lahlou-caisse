@@ -290,6 +290,17 @@
                 });
             }, [history, dateStart, dateEnd, activeStaff]);
 
+            const workerStats = useMemo(() => {
+                if (activeStaff?.role !== 'admin') return null;
+                const stats = { 'IMANE': 0, 'HIBA': 0, 'FAYSSAL': 0 };
+                filteredHistory.forEach(tx => {
+                    if (tx.workerName && stats[tx.workerName] !== undefined) {
+                        stats[tx.workerName] += tx.total;
+                    }
+                });
+                return stats;
+            }, [filteredHistory, activeStaff]);
+
             const confirmDelete = async () => {
                 if (!transactionToDelete) return;
                 try {
@@ -476,6 +487,31 @@
                                     </div>
                                     <button onClick={() => { setDateStart(''); setDateEnd(''); }} className="p-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200"><Icon name="refresh-ccw" size={20} /></button>
                                 </div>
+
+                                {activeStaff.role === 'admin' && workerStats && (
+                                    <div className="bg-white rounded-[2.5rem] shadow-sm border border-rose-50 p-6 animate-fade-in">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <Icon name="sparkles" size={16} className="text-rose-400" /> Caisse par Employé (50%)
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            {Object.entries(workerStats).map(([name, total]) => (
+                                                <div key={name} className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col justify-between transition-all hover:border-rose-100 hover:shadow-sm">
+                                                    <div className="font-black text-slate-700 text-lg mb-3">{name}</div>
+                                                    <div className="space-y-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[10px] font-black text-slate-400 uppercase">Recette totale</span>
+                                                            <span className="font-black text-slate-800">{total} DH</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                                                            <span className="text-[10px] font-black text-rose-400 uppercase">Part Employé (50%)</span>
+                                                            <span className="font-black text-rose-600 text-lg">{total / 2} DH</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="bg-white rounded-[2.5rem] shadow-sm border border-rose-50 overflow-hidden">
                                     <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
