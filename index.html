@@ -1,346 +1,473 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BARBER LAHLOU - ELITE POS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-        :root { --bg-main: #020617; --accent: #3b82f6; --glass-bg: rgba(15, 23, 42, 0.9); --border-glass: rgba(255, 255, 255, 0.08); }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-main); color: white; -webkit-tap-highlight-color: transparent; user-select: none; }
-        .glass { background: var(--glass-bg); backdrop-filter: blur(25px); border: 1px solid var(--border-glass); }
-        .service-card { background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.4)); border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.2s ease; cursor: pointer; }
-        .service-card:active { transform: scale(0.96); }
-        .service-card:hover { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); }
-        @media print { .no-print { display: none !important; } .print-only { display: block !important; } body { background: white !important; color: black !important; } #printZone { width: 100%; max-width: 80mm; margin: 0 auto; padding: 10px; font-family: monospace; } }
-        .print-only { display: none; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .pin-dot { transition: all 0.2s ease; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); }
-        .pin-dot.filled { background: white; border-color: white; box-shadow: 0 0 12px white; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-in { animation: fadeIn 0.3s ease-out forwards; }
-    </style>
-</head>
-<body class="h-screen flex flex-col overflow-hidden">
+import React, { useState, useEffect, useMemo } from 'react';
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  signInAnonymously, 
+  signInWithCustomToken, 
+  onAuthStateChanged 
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  onSnapshot, 
+  query, 
+  doc 
+} from 'firebase/firestore';
+import { 
+  Plus, 
+  Minus, 
+  Trash2, 
+  ShoppingBag, 
+  History, 
+  ChevronRight, 
+  Receipt, 
+  X, 
+  CheckCircle2,
+  Scissors,
+  Calendar,
+  Filter,
+  RefreshCcw,
+  Sparkles,
+  Eye,
+  Hand,
+  Wind,
+  PlusCircle,
+  Cloud
+} from 'lucide-react';
 
-    <div id="printZone" class="print-only text-black bg-white p-4 text-[12px] font-mono leading-tight"></div>
+// --- CONFIGURATION FIREBASE ---
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'lahlou-elegance-pos';
 
-    <!-- PIN LOGIN SCREEN -->
-    <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-[200] flex flex-col items-center justify-center transition-all duration-500">
-        <div class="mb-12 text-center animate-in">
-            <div class="w-24 h-24 bg-blue-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-500/30">
-                <i class="fa-solid fa-scissors text-4xl text-white"></i>
+const COIFFURE_SERVICES = [
+  { id: 'c1', name: 'Brushing', price: 40, isStarting: true, category: 'coiffure' },
+  { id: 'c2', name: 'Coupe + Brushing', price: 80, isStarting: false, category: 'coiffure' },
+  { id: 'c3', name: 'Pointes + Brushing', price: 80, isStarting: false, category: 'coiffure' },
+  { id: 'c4', name: 'Coloration + Brushing', price: 250, isStarting: false, category: 'coiffure' },
+  { id: 'c5', name: 'Méches', price: 300, isStarting: false, category: 'coiffure' },
+  { id: 'c6', name: 'Ombré', price: 450, isStarting: true, category: 'coiffure' },
+  { id: 'c7', name: 'Protéines', price: 450, isStarting: true, category: 'coiffure' },
+  { id: 'c8', name: 'Protéines Racines', price: 250, isStarting: false, category: 'coiffure' },
+  { id: 'c10', name: 'Soins Hydratants', price: 150, isStarting: true, category: 'coiffure' },
+];
+
+const ESTHETIQUE_SERVICES = [
+  // Épilation
+  { id: 'e1', name: 'Sourcils', price: 30, sub: 'épilation', category: 'esthetique' },
+  { id: 'e19', name: 'Duvet', price: 20, sub: 'épilation', category: 'esthetique' },
+  { id: 'e20', name: 'Aisselles', price: 30, sub: 'épilation', category: 'esthetique' },
+  { id: 'e2', name: 'Visage', price: 70, sub: 'épilation', category: 'esthetique' },
+  { id: 'e21', name: 'Maillot', price: 100, sub: 'épilation', category: 'esthetique' },
+  { id: 'e3', name: 'Jambes Complètes', price: 90, sub: 'épilation', category: 'esthetique' },
+  { id: 'e4', name: 'Demi-Jambes', price: 60, sub: 'épilation', category: 'esthetique' },
+  { id: 'e5', name: 'Bras', price: 60, sub: 'épilation', category: 'esthetique' },
+  { id: 'e6', name: 'Épilation Corps Complet', price: 250, sub: 'épilation', category: 'esthetique' },
+  
+  // Onglerie
+  { id: 'e18', name: 'Vernis Normal', price: 30, sub: 'onglerie', category: 'esthetique' },
+  { id: 'e7', name: 'Manucure Simple', price: 50, sub: 'onglerie', category: 'esthetique' },
+  { id: 'e8', name: 'Pédicure Spa', price: 80, sub: 'onglerie', category: 'esthetique' },
+  { id: 'e9', name: 'Vernis Permanent', price: 80, sub: 'onglerie', category: 'esthetique' },
+  { id: 'e28', name: 'BIAB', price: 150, sub: 'onglerie', category: 'esthetique' },
+  { id: 'e11', name: 'Faux Ongles + Perm.', price: 120, sub: 'onglerie', category: 'esthetique' },
+  { id: 'e10', name: 'Gels + Faux Ongles', price: 200, sub: 'onglerie', category: 'esthetique' },
+
+  // Extra
+  { id: 'e23', name: 'Dépose', price: 50, sub: 'extra', category: 'esthetique' },
+  { id: 'e24', name: 'French (doigt)', price: 5, sub: 'extra', category: 'esthetique' },
+  { id: 'e25', name: 'Cat Eye (doigt)', price: 5, sub: 'extra', category: 'esthetique' },
+  { id: 'e26', name: 'Design (doigt)', price: 10, sub: 'extra', category: 'esthetique' },
+
+  // Soins Visage
+  { id: 'e12', name: 'Soin Visage Éclat', price: 250, isStarting: true, sub: 'soins visage', category: 'esthetique' },
+  { id: 'e13', name: 'Soin Visage Profond', price: 400, isStarting: true, sub: 'soins visage', category: 'esthetique' },
+  
+  // Les Cils / Sourcils
+  { id: 'e16', name: 'Permanent Naturel', price: 120, sub: 'les cils', category: 'esthetique' },
+  { id: 'e17', name: 'Permanent Volume Russe', price: 250, sub: 'les cils', category: 'esthetique' },
+  { id: 'e22', name: 'Remplissage Cils', price: 80, sub: 'les cils', category: 'esthetique' },
+  { id: 'e27', name: 'Teinture Sourcils', price: 50, sub: 'les cils', category: 'esthetique' },
+  
+  // Autre
+  { id: 'e14', name: 'Maquillage Invité', price: 300, sub: 'autre', category: 'esthetique' },
+];
+
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [view, setView] = useState('pos');
+  const [activeCategory, setActiveCategory] = useState('coiffure');
+  const [activeSub, setActiveSub] = useState('onglerie');
+  const [showReceipt, setShowReceipt] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+
+  // 1. Initialisation de l'authentification (Cloud Sync)
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (err) {
+        console.error("Auth Error:", err);
+      }
+    };
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Synchronisation en temps réel de l'historique
+  useEffect(() => {
+    if (!user) return;
+    setIsSyncing(true);
+    // Path: /artifacts/{appId}/public/data/sales
+    const salesCol = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
+    
+    const unsubscribe = onSnapshot(salesCol, (snapshot) => {
+      const salesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      // Tri manuel pour éviter les index complexes
+      const sorted = salesData.sort((a, b) => b.timestamp - a.timestamp);
+      setHistory(sorted);
+      setIsSyncing(false);
+    }, (error) => {
+      console.error("Firestore error:", error);
+      setIsSyncing(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const currentServices = useMemo(() => {
+    if (activeCategory === 'coiffure') return COIFFURE_SERVICES;
+    return ESTHETIQUE_SERVICES.filter(s => s.sub === activeSub);
+  }, [activeCategory, activeSub]);
+
+  const subtotal = useMemo(() => {
+    return cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  }, [cart]);
+
+  const addToCart = (service) => {
+    const existing = cart.find(i => i.id === service.id);
+    if (existing) {
+      setCart(cart.map(i => i.id === service.id ? { ...i, quantity: i.quantity + 1 } : i));
+    } else {
+      setCart([...cart, { ...service, quantity: 1 }]);
+    }
+  };
+
+  const updateQuantity = (id, delta) => {
+    setCart(prev => prev.map(item => {
+      if (item.id === id) {
+        const newQty = item.quantity + delta;
+        return newQty <= 0 ? null : { ...item, quantity: newQty };
+      }
+      return item;
+    }).filter(Boolean));
+  };
+
+  const openPriceEditor = (item) => {
+    setEditingItem({ ...item });
+  };
+
+  const saveCustomPrice = () => {
+    setCart(cart.map(i => i.id === editingItem.id ? { ...i, price: Number(editingItem.price) } : i));
+    setEditingItem(null);
+  };
+
+  const handleCheckout = async () => {
+    if (cart.length === 0 || !user) return;
+    
+    setIsSyncing(true);
+    const now = new Date();
+    const transaction = {
+      timestamp: now.getTime(),
+      dateStr: now.toLocaleString('fr-FR'),
+      dateIso: now.toISOString().split('T')[0],
+      items: cart,
+      total: subtotal,
+      createdBy: user.uid
+    };
+
+    try {
+      const salesCol = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
+      await addDoc(salesCol, transaction);
+      setShowReceipt({ ...transaction, id: Date.now() });
+      setCart([]);
+    } catch (err) {
+      console.error("Save error:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const filteredHistory = useMemo(() => {
+    return history.filter(tx => {
+      const txDate = tx.dateIso;
+      if (dateStart && txDate < dateStart) return false;
+      if (dateEnd && txDate > dateEnd) return false;
+      return true;
+    });
+  }, [history, dateStart, dateEnd]);
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-20">
+      <header className="bg-white border-b border-rose-100 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-rose-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <Scissors className="text-white w-5 h-5" />
             </div>
-            <h1 class="text-4xl font-extrabold tracking-tighter uppercase italic leading-none mb-2 text-white">Barber Lahlou</h1>
-            <p class="text-slate-500 text-xs font-bold tracking-[0.5em] uppercase">Private Access</p>
-        </div>
-        <div class="flex gap-5 mb-12" id="pinIndicator">
-            <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
-        </div>
-        <p id="pinError" class="text-rose-500 font-bold mb-8 h-6 invisible uppercase text-[10px] tracking-widest">Code Incorrect</p>
-        <div class="grid grid-cols-3 gap-6 max-w-[300px]">
-            <button onclick="keyTap('1')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">1</button>
-            <button onclick="keyTap('2')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">2</button>
-            <button onclick="keyTap('3')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">3</button>
-            <button onclick="keyTap('4')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">4</button>
-            <button onclick="keyTap('5')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">5</button>
-            <button onclick="keyTap('6')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">6</button>
-            <button onclick="keyTap('7')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">7</button>
-            <button onclick="keyTap('8')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">8</button>
-            <button onclick="keyTap('9')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">9</button>
-            <div class="invisible"></div>
-            <button onclick="keyTap('0')" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl glass hover:bg-white/10 text-2xl font-bold transition-all active:scale-90 text-white">0</button>
-            <button onclick="keyBack()" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center text-slate-500 hover:text-white transition-all active:scale-95"><i class="fa-solid fa-delete-left text-2xl"></i></button>
-        </div>
-    </div>
-
-    <!-- MAIN APP -->
-    <div class="no-print flex flex-col h-full opacity-0 pointer-events-none transition-opacity duration-500" id="mainApp">
-        <header class="h-20 flex items-center justify-between px-6 border-b border-white/5 bg-slate-950/80 z-50">
-            <div class="flex items-center gap-4">
-                <button onclick="logout()" class="w-11 h-11 rounded-xl glass flex items-center justify-center text-rose-500 hover:bg-rose-500/10 transition-all active:scale-90"><i class="fa-solid fa-power-off"></i></button>
-                <div class="h-8 w-px bg-white/10 mx-1"></div>
-                <div>
-                    <h1 class="text-xl font-black uppercase italic leading-none text-white">Barber Lahlou</h1>
-                </div>
+            <div>
+              <h1 className="text-lg font-black text-rose-900 leading-none tracking-tighter">LAHLOU ÉLÉGANCE</h1>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${user ? 'bg-green-400' : 'bg-orange-400 animate-pulse'}`}></div>
+                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                  {user ? 'Connecté (Cloud)' : 'Connexion...'}
+                </span>
+              </div>
             </div>
-            <div class="flex items-center gap-5">
-                <div class="text-right hidden sm:block">
-                    <p id="topDate" class="text-[9px] font-bold text-blue-500 uppercase tracking-[0.2em] mb-0.5"></p>
-                    <p id="topTime" class="text-sm font-extrabold font-mono text-white/90"></p>
-                </div>
-                <button onclick="openReports()" class="h-12 px-6 rounded-xl glass text-blue-400 hover:bg-blue-500/10 transition-all border border-blue-500/20 active:scale-95 flex items-center gap-2 shadow-lg shadow-blue-500/5">
-                    <i class="fa-solid fa-vault"></i> <span class="text-[10px] font-black uppercase tracking-widest hidden md:block">Caisse</span>
+          </div>
+          <div className="flex bg-slate-100 rounded-2xl p-1 shadow-inner border border-slate-200">
+            <button onClick={() => setView('pos')} className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${view === 'pos' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400'}`}>VENTE</button>
+            <button onClick={() => setView('history')} className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${view === 'history' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400'}`}>HISTORIQUE</button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
+        {view === 'pos' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-8 space-y-6">
+              <div className="flex gap-4 p-1 bg-white rounded-3xl shadow-sm border border-slate-100 w-fit">
+                <button onClick={() => setActiveCategory('coiffure')} className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm transition-all ${activeCategory === 'coiffure' ? 'bg-rose-500 text-white shadow-lg shadow-rose-100' : 'text-slate-400 hover:bg-rose-50'}`}>
+                  <Wind size={18} /> COIFFURE
                 </button>
+                <button onClick={() => setActiveCategory('esthetique')} className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm transition-all ${activeCategory === 'esthetique' ? 'bg-rose-500 text-white shadow-lg shadow-rose-100' : 'text-slate-400 hover:bg-rose-50'}`}>
+                  <Sparkles size={18} /> ESTHÉTIQUE
+                </button>
+              </div>
+
+              {activeCategory === 'esthetique' && (
+                <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-2">
+                  {['onglerie', 'soins visage', 'épilation', 'les cils', 'extra', 'autre'].map((sub) => (
+                    <button key={sub} onClick={() => setActiveSub(sub)} className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${activeSub === sub ? 'bg-rose-50 border-rose-200 text-rose-600 shadow-sm' : 'bg-white border-transparent text-slate-400 hover:border-slate-100'}`}>
+                      {sub}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 min-h-[400px]">
+                {currentServices.map((service) => (
+                  <button key={service.id} onClick={() => addToCart(service)} className="flex flex-col items-center justify-center p-6 bg-white border border-transparent rounded-[2.5rem] shadow-sm hover:shadow-xl hover:border-rose-200 transition-all active:scale-95 group text-center relative h-[160px]">
+                    <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity"><Plus size={20} className="text-rose-300" /></div>
+                    <span className="text-sm font-bold text-slate-700 mb-2 px-2 leading-tight">{service.name}</span>
+                    <span className="text-rose-500 font-black text-xl">{service.price} DH</span>
+                  </button>
+                ))}
+              </div>
             </div>
-        </header>
 
-        <main class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-            <section class="flex-1 flex flex-col p-4 md:p-6 gap-6 bg-slate-950/30 overflow-hidden">
-                <div id="workerRow" class="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-1 hidden"></div>
-                <div class="flex-1 overflow-y-auto hide-scrollbar pb-24">
-                    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4" id="servicesGrid"></div>
+            <div className="lg:col-span-4">
+              <div className="bg-white rounded-[2.5rem] shadow-2xl border border-rose-50 overflow-hidden sticky top-24">
+                <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+                  <h2 className="text-lg font-black flex items-center gap-2 text-slate-800 uppercase tracking-tight">
+                    <ShoppingBag size={22} className="text-rose-500" /> Panier
+                  </h2>
+                  {isSyncing && <RefreshCcw className="text-rose-300 animate-spin" size={18} />}
                 </div>
-            </section>
 
-            <section class="w-full lg:w-[420px] glass flex flex-col border-l border-white/5 relative shadow-2xl z-10">
-                <div class="p-6 border-b border-white/5 flex justify-between items-start bg-white/5">
-                    <div>
-                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]" id="roleDisplay">Session</span>
-                        <h2 class="text-2xl font-black italic uppercase mt-1 text-white" id="displayWorker">...</h2>
+                <div className="p-4 max-h-[45vh] overflow-y-auto">
+                  {cart.length === 0 ? (
+                    <div className="py-20 text-center grayscale opacity-30">
+                      <ShoppingBag size={56} className="mx-auto mb-4 text-rose-500" />
+                      <p className="font-black text-slate-500 text-sm italic">Panier Khawi</p>
                     </div>
-                    <div class="bg-blue-600 border border-blue-500/30 text-white text-[10px] font-black px-3 py-1 rounded-full italic shadow-lg shadow-blue-500/20" id="ticketNum">#0001</div>
-                </div>
-                <div class="flex-1 overflow-y-auto p-4 space-y-2 hide-scrollbar" id="cartContainer"></div>
-                <div class="p-6 bg-slate-950 border-t border-white/10">
-                    <div class="flex justify-between items-end mb-8 px-2">
-                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest text-slate-400">Total Net</span>
-                        <div class="text-right leading-none">
-                            <span id="cartTotal" class="text-5xl font-extrabold tracking-tighter text-white">0.00</span>
-                            <span class="text-xs font-black text-blue-500 ml-1 italic">MAD</span>
+                  ) : (
+                    <div className="space-y-6">
+                      {cart.map((item) => (
+                        <div key={item.id} className="animate-in fade-in slide-in-from-right-2">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <h3 className="font-bold text-sm text-slate-800">{item.name}</h3>
+                              <button onClick={() => openPriceEditor(item)} className="text-[10px] font-black text-rose-400 uppercase tracking-tighter underline decoration-rose-100 underline-offset-2">{item.price} DH</button>
+                            </div>
+                            <button onClick={() => setCart(cart.filter(i => i.id !== item.id))} className="text-slate-300 hover:text-red-500 transition-colors"><X size={18} /></button>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1 bg-slate-50 rounded-2xl p-1 border border-slate-100">
+                              <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white shadow-sm text-rose-500 active:scale-90"><Minus size={14} /></button>
+                              <span className="text-sm font-black min-w-[32px] text-center">{item.quantity}</span>
+                              <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white shadow-sm text-rose-500 active:scale-90"><Plus size={14} /></button>
+                            </div>
+                            <div className="font-black text-slate-800">{item.price * item.quantity} DH</div>
+                          </div>
                         </div>
+                      ))}
                     </div>
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <button onclick="finishSale('Espèces')" class="h-20 rounded-[2rem] bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-900/20 transition-all flex flex-col items-center justify-center gap-1 active:scale-95">
-                            <i class="fa-solid fa-money-bill-transfer text-2xl mb-1"></i> Espèces
-                        </button>
-                        <button onclick="finishSale('Carte TPE')" class="h-20 rounded-[2rem] bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-900/20 transition-all flex flex-col items-center justify-center gap-1 active:scale-95">
-                            <i class="fa-solid fa-credit-card text-2xl mb-1"></i> Carte TPE
-                        </button>
-                    </div>
-                    <div class="flex gap-4">
-                        <button onclick="resetCart()" class="flex-1 h-14 rounded-2xl bg-white/5 hover:bg-rose-500/10 text-slate-500 hover:text-rose-500 border border-white/5 transition-all font-black text-[10px] uppercase tracking-widest active:scale-95">Annuler</button>
-                        <button onclick="printPreview()" class="flex-[1.4] h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white border border-white/10 shadow-xl transition-all font-black text-[10px] uppercase tracking-widest active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-print"></i> Aperçu</button>
-                    </div>
+                  )}
                 </div>
-            </section>
-        </main>
-    </div>
 
-    <!-- MODAL REPORTS -->
-    <div id="reportsModal" class="no-print fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
-        <div class="absolute inset-0 bg-black/95 backdrop-blur-lg" onclick="closeReports()"></div>
-        <div class="w-full max-w-4xl max-h-[90vh] glass rounded-[3rem] overflow-hidden flex flex-col relative z-10 animate-in">
-            <div class="p-8 flex items-center justify-between border-b border-white/5 bg-white/5">
-                <div class="flex flex-col md:flex-row md:items-center gap-6">
-                    <h2 class="text-3xl font-black italic uppercase tracking-tighter text-blue-500">Journal Cloud</h2>
-                    <div class="flex items-center bg-slate-950 rounded-2xl border border-white/5 p-1 px-3">
-                        <i class="fa-solid fa-calendar-check text-slate-500 mr-3"></i>
-                        <input type="date" id="reportDate" onchange="fetchDayData(this.value)" class="bg-transparent border-none text-white p-2 text-sm font-bold outline-none uppercase tracking-widest cursor-pointer">
-                    </div>
+                <div className="p-8 bg-rose-50/30 border-t border-rose-100">
+                  <div className="flex justify-between items-center mb-8">
+                    <span className="text-slate-500 font-black uppercase text-xs tracking-widest">Total Payé</span>
+                    <span className="text-4xl font-black text-rose-600 tracking-tighter">{subtotal} <small className="text-sm font-bold">DH</small></span>
+                  </div>
+                  <button 
+                    disabled={cart.length === 0 || isSyncing}
+                    onClick={handleCheckout}
+                    className={`w-full py-5 rounded-[2rem] font-black text-lg flex items-center justify-center gap-3 transition-all shadow-2xl active:scale-95 ${cart.length > 0 && !isSyncing ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-rose-200' : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'}`}
+                  >
+                    {isSyncing ? 'Synchronisation...' : 'ENCAISSER'} <ChevronRight size={22} />
+                  </button>
                 </div>
-                <button onclick="closeReports()" class="w-12 h-12 rounded-full glass flex items-center justify-center hover:bg-rose-500 transition-all text-white"><i class="fa-solid fa-xmark"></i></button>
+              </div>
             </div>
-            <div id="reportContent" class="flex-1 overflow-y-auto p-8 space-y-10 hide-scrollbar bg-slate-950/20"></div>
-            <div class="p-8 border-t border-white/5 flex justify-between items-center bg-slate-950/90">
-                <button onclick="globalReset()" id="resetBtn" class="px-8 py-4 rounded-2xl bg-rose-500/10 text-rose-500 font-black uppercase text-[10px] tracking-[0.2em] border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all hidden">Reset Nhar</button>
-                <button onclick="window.print()" class="px-10 py-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-blue-500/30 active:scale-95 ml-auto">Imprimer Rapport</button>
+          </div>
+        ) : (
+          <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-white p-6 rounded-[2.5rem] shadow-sm border border-rose-50">
+              <div className="grid grid-cols-2 gap-4 flex-1">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Men (Du)</label>
+                  <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-rose-200 focus:bg-white rounded-2xl outline-none font-bold text-sm transition-all" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hta (Au)</label>
+                  <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-rose-200 focus:bg-white rounded-2xl outline-none font-bold text-sm transition-all" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => { setDateStart(''); setDateEnd(''); }} className="p-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-colors"><RefreshCcw size={20} /></button>
+                <div className="bg-rose-500 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-lg">
+                  <Filter size={18} />
+                  <span>{filteredHistory.length} Ventes</span>
+                </div>
+              </div>
             </div>
+
+            <div className="bg-white rounded-[2.5rem] shadow-sm border border-rose-50 overflow-hidden">
+              <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                <h2 className="text-xl font-black flex items-center gap-3 text-slate-800 uppercase tracking-tight">
+                  <div className="w-10 h-10 bg-rose-500 rounded-2xl flex items-center justify-center text-white"><History size={20} /></div>
+                  Cloud History
+                </h2>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recette Période</p>
+                  <p className="text-3xl font-black text-rose-600 tracking-tighter">{filteredHistory.reduce((a,b) => a + b.total, 0)} DH</p>
+                </div>
+              </div>
+              <div className="divide-y divide-slate-50">
+                {filteredHistory.length === 0 ? (
+                  <div className="py-24 text-center grayscale opacity-20">
+                    <History size={64} className="mx-auto mb-4" />
+                    <p className="font-black text-slate-600">Mawalou f had l-modda</p>
+                  </div>
+                ) : (
+                  filteredHistory.map((tx) => (
+                    <div key={tx.id} className="p-6 flex items-center justify-between hover:bg-rose-50/20 transition-all group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-50 flex flex-col items-center justify-center border border-slate-100 group-hover:bg-white transition-colors">
+                          <Cloud className="text-rose-200" size={16} />
+                        </div>
+                        <div>
+                          <div className="font-black text-lg text-slate-800">{tx.total} DH</div>
+                          <div className="text-xs font-bold text-rose-400">{tx.dateStr}</div>
+                        </div>
+                      </div>
+                      <button onClick={() => setShowReceipt(tx)} className="w-12 h-12 flex items-center justify-center bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white rounded-2xl transition-all shadow-sm"><Receipt size={22} /></button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Manual Price Modal */}
+      {editingItem && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl overflow-hidden border border-rose-100 animate-in zoom-in duration-200">
+            <div className="p-8 pb-2 flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Prix Spécial</h3>
+                <p className="text-xs font-bold text-rose-400 mt-1 italic">{editingItem.name}</p>
+              </div>
+              <button onClick={() => setEditingItem(null)} className="p-3 bg-slate-100 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"><X size={20} /></button>
+            </div>
+            <div className="p-8">
+              <div className="relative mb-8">
+                <input 
+                  autoFocus type="number" 
+                  value={editingItem.price}
+                  onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
+                  className="w-full text-5xl font-black p-8 bg-slate-50 rounded-[2rem] border-2 border-transparent focus:border-rose-400 focus:bg-white focus:outline-none transition-all text-center text-rose-600 shadow-inner"
+                />
+                <span className="absolute bottom-4 right-8 font-black text-rose-300 text-xl">DH</span>
+              </div>
+              <button onClick={saveCustomPrice} className="w-full py-6 bg-rose-500 text-white rounded-[2rem] font-black text-xl hover:bg-rose-600 transition-all shadow-xl shadow-rose-200 active:scale-95 uppercase tracking-widest">Confirmer</button>
+            </div>
+          </div>
         </div>
-    </div>
+      )}
 
-    <!-- MODAL DIALOG -->
-    <div id="dialogModal" class="no-print fixed inset-0 z-[300] flex items-center justify-center p-4 hidden">
-        <div class="absolute inset-0 bg-black/95 backdrop-blur-sm"></div>
-        <div class="w-full max-w-sm glass p-10 rounded-[3rem] text-center border border-white/10 relative z-10 animate-in">
-            <div id="dialogIcon" class="mb-6 text-5xl"></div>
-            <h3 id="dialogTitle" class="text-2xl font-black italic uppercase text-white mb-3"></h3>
-            <p id="dialogMsg" class="text-slate-400 text-sm font-medium mb-10"></p>
-            <div id="dialogButtons" class="flex gap-4"></div>
+      {/* Modal Reçu */}
+      {showReceipt && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3.5rem] w-full max-w-md shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-500">
+            <div className="bg-rose-500 p-12 text-center text-white relative">
+              <button onClick={() => setShowReceipt(null)} className="absolute top-8 right-8 p-2 bg-white/10 rounded-full"><X size={20} /></button>
+              <div className="bg-white/20 w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 backdrop-blur-sm shadow-xl"><CheckCircle2 size={40} className="text-white" /></div>
+              <h2 className="text-3xl font-black mb-1 uppercase tracking-tighter">Vente Cloud Réussie</h2>
+              <p className="text-rose-100 text-sm font-bold opacity-80 uppercase tracking-widest">Syncronisée f ga3 les appareils</p>
+            </div>
+            <div className="p-10">
+              <div className="text-center mb-10">
+                <h3 className="text-2xl font-black text-rose-900 tracking-tighter uppercase">LAHLOU ÉLÉGANCE</h3>
+                <div className="h-px bg-slate-100 w-full my-6"></div>
+                <div className="text-[10px] text-slate-400 flex justify-between uppercase font-black tracking-widest bg-slate-50 px-5 py-2.5 rounded-full mt-4">
+                  <span>Ticket Sync OK</span>
+                  <span>{showReceipt.dateStr}</span>
+                </div>
+              </div>
+              <div className="space-y-5 mb-10 overflow-y-auto max-h-[180px] pr-2 custom-scrollbar">
+                {showReceipt.items.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center group">
+                    <div className="flex flex-col">
+                      <span className="text-slate-800 font-bold text-sm tracking-tight">{item.name}</span>
+                      <span className="text-[9px] font-black text-rose-300 uppercase tracking-widest">{item.quantity} x {item.price} DH</span>
+                    </div>
+                    <span className="font-black text-slate-800 text-lg">{item.price * item.quantity} DH</span>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-rose-50/50 rounded-[2.5rem] p-8 flex flex-col items-center justify-center border border-rose-100/50 shadow-inner">
+                <span className="font-black text-rose-400 uppercase tracking-widest text-[10px] mb-2">Montant Total</span>
+                <span className="text-5xl font-black text-rose-600 tracking-tighter">{showReceipt.total} <small className="text-xl font-bold">DH</small></span>
+              </div>
+              <button onClick={() => setShowReceipt(null)} className="w-full mt-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xl hover:bg-slate-800 transition-all uppercase tracking-widest shadow-2xl active:scale-95">Fermer</button>
+            </div>
+          </div>
         </div>
+      )}
     </div>
+  );
+};
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // =========================================================================
-        // DATA & CONFIG
-        // =========================================================================
-        const USERS = { '2020': { name: 'DRISS', role: 'ADMIN' }, '1212': { name: 'SOUHAIL', role: 'WORKER' }, '5050': { name: 'HATIM', role: 'WORKER' }, '2356': { name: 'HAITAM', role: 'WORKER' }, '9999': { name: 'FAYSSAL', role: 'WORKER' } };
-        const WORKERS_LIST = ['SOUHAIL', 'HATIM', 'HAITAM', 'FAYSSAL', 'DRISS'];
-        const SERVICES = [
-            { id: 1, name: 'Coupe Homme', price: 50, icon: 'fa-scissors', color: 'text-blue-400' },
-            { id: 2, name: 'Coupe + Barbe', price: 70, icon: 'fa-user-tie', color: 'text-indigo-400' },
-            { id: 3, name: 'Tracé Barbe', price: 30, icon: 'fa-pencil', color: 'text-sky-400' },
-            { id: 4, name: 'Coupe Enfant', price: 40, icon: 'fa-child', color: 'text-emerald-400' },
-            { id: 5, name: 'Brushing', price: 40, icon: 'fa-wind', color: 'text-pink-400' },
-            { id: 6, name: 'Soin Visage', price: 80, icon: 'fa-spa', color: 'text-teal-400' },
-            { id: 7, name: 'Gommage', price: 35, icon: 'fa-hands-bubbles', color: 'text-cyan-400' },
-            { id: 8, name: 'Soin Protéine', price: 300, icon: 'fa-vial-virus', color: 'text-purple-400' },
-            { id: 9, name: 'Soin Kératine', price: 500, icon: 'fa-spray-can-sparkles', color: 'text-fuchsia-400' },
-            { id: 10, name: 'Coloration', price: 250, icon: 'fa-palette', color: 'text-orange-400' },
-            { id: 11, name: 'Pack VIP', price: 150, icon: 'fa-crown', color: 'text-amber-400' }
-        ];
-
-        let state = { user: null, activeWorker: '', cart: [], dailySales: [], reportSales: [], db: null, auth: null, appId: 'barber-lahlou-app' };
-        
-        // MAMOUNE: CONFIG API KEY
-        const config = { 
-            apiKey: "AIzaSyBdNRfkM94j2NWCBnnnjYnuzjdfwKdIIK", 
-            authDomain: "barber-lahlou-caisse.firebaseapp.com", 
-            projectId: "barber-lahlou-caisse", 
-            storageBucket: "barber-lahlou-caisse.firebasestorage.app", 
-            messagingSenderId: "637483895643", 
-            appId: "1:637483895643:web:3aa1f4ef4463b54587a87e" 
-        };
-
-        const marocTz = { timeZone: 'Africa/Casablanca', hour12: false };
-
-        // =========================================================================
-        // PIN LOGIN LOGIC
-        // =========================================================================
-        let typed = "";
-        window.keyTap = (n) => {
-            if (typed.length < 4) { typed += n; updateDots(); if (typed.length === 4) setTimeout(checkAuth, 300); }
-        };
-        window.keyBack = () => { typed = typed.slice(0,-1); updateDots(); };
-        function updateDots() {
-            const dots = document.querySelectorAll('.pin-dot');
-            dots.forEach((d, i) => i < typed.length ? d.classList.add('filled') : d.classList.remove('filled'));
-            document.getElementById('pinError').classList.add('invisible');
-        }
-        function checkAuth() {
-            const match = USERS[typed];
-            if (match) { localStorage.setItem('bl_sess', JSON.stringify(match)); initApp(match); }
-            else { document.getElementById('pinError').classList.remove('invisible'); typed = ""; updateDots(); }
-        }
-
-        // =========================================================================
-        // FIREBASE & APP START
-        // =========================================================================
-        async function initApp(session) {
-            state.user = session;
-            state.activeWorker = session.name;
-            document.getElementById('loginScreen').style.opacity = "0";
-            setTimeout(() => { 
-                document.getElementById('loginScreen').classList.add('hidden'); 
-                document.getElementById('mainApp').classList.remove('pointer-events-none');
-                document.getElementById('mainApp').classList.replace('opacity-0', 'opacity-100');
-            }, 500);
-
-            try {
-                const app = initializeApp(config);
-                state.auth = getAuth(app);
-                state.db = getFirestore(app);
-                const userCred = await signInAnonymously(state.auth);
-                
-                if (userCred.user) {
-                    const q = query(collection(state.db, 'artifacts', state.appId, 'public', 'data', 'sales'), where("date", "==", getTodayISO()));
-                    onSnapshot(q, (snap) => {
-                        state.dailySales = [];
-                        snap.forEach(d => state.dailySales.push({ id: d.id, ...d.data() }));
-                        updateUI();
-                    });
-                }
-            } catch (e) { console.error("Firebase Error", e); }
-            renderWorkers(); renderServices(); updateUI();
-        }
-
-        function updateUI() {
-            document.getElementById('displayWorker').innerText = state.activeWorker;
-            document.getElementById('ticketNum').innerText = `#${String(state.dailySales.length + 1).padStart(4, '0')}`;
-            document.getElementById('roleDisplay').innerText = state.user.role === 'ADMIN' ? 'MODE PATRON' : 'SESSION COIFFEUR';
-            renderCart();
-            const now = new Date();
-            document.getElementById('topDate').innerText = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric', ...marocTz }).format(now).toUpperCase();
-            document.getElementById('topTime').innerText = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', ...marocTz }).format(now);
-        }
-
-        function renderWorkers() {
-            const row = document.getElementById('workerRow');
-            if (state.user.role === 'ADMIN') {
-                row.classList.remove('hidden');
-                row.innerHTML = WORKERS_LIST.map(w => `<button onclick="changeWorker('${w}')" class="px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap active:scale-95 ${state.activeWorker === w ? 'bg-blue-600 text-white shadow-lg' : 'glass text-slate-500 hover:text-white'}">${w}</button>`).join('');
-            }
-        }
-
-        function renderServices() {
-            document.getElementById('servicesGrid').innerHTML = SERVICES.map(s => `
-                <button onclick="addService(${s.id})" class="service-card h-32 md:h-40 rounded-[2.5rem] p-5 flex flex-col justify-between items-center text-center group active:scale-95 animate-in">
-                    <div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform"><i class="fa-solid ${s.icon} ${s.color} text-xl md:text-2xl"></i></div>
-                    <div><p class="text-[9px] font-bold text-slate-500 uppercase mb-1">${s.name}</p><p class="text-sm md:text-lg font-black italic text-white">${Number(s.price).toFixed(2)} Dh</p></div>
-                </button>`).join('');
-        }
-
-        function renderCart() {
-            const cont = document.getElementById('cartContainer');
-            if (state.cart.length === 0) { cont.innerHTML = ""; document.getElementById('cartTotal').innerText = "0.00"; return; }
-            let total = 0;
-            cont.innerHTML = state.cart.map(item => {
-                const s = SERVICES.find(x => x.id === item.id);
-                total += s.price * item.qty;
-                return `<div class="flex items-center justify-between p-4 glass rounded-[1.8rem] animate-in mb-2 border border-white/5 shadow-lg"><div class="flex-1"><p class="font-black text-[11px] uppercase italic text-white leading-tight">${s.name}</p><p class="text-[9px] text-slate-500 font-bold mt-1">${s.price.toFixed(2)} MAD</p></div><div class="flex items-center gap-3"><div class="flex items-center bg-black/50 rounded-xl p-1"><button onclick="qtyUpdate(${s.id},-1)" class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-white"><i class="fa-solid fa-minus text-[8px]"></i></button><span class="w-6 text-center font-black text-xs text-white">${item.qty}</span><button onclick="qtyUpdate(${s.id},1)" class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-white"><i class="fa-solid fa-plus text-[8px]"></i></button></div><span class="w-14 text-right font-black italic text-blue-400 text-sm tracking-tighter">${(s.price*item.qty).toFixed(2)}</span></div></div>`;
-            }).join('');
-            document.getElementById('cartTotal').innerText = total.toFixed(2);
-        }
-
-        // =========================================================================
-        // ACTIONS
-        // =========================================================================
-        window.addService = (id) => { const ex = state.cart.find(i => i.id === id); if (ex) ex.qty++; else state.cart.push({ id, qty: 1 }); renderCart(); };
-        window.qtyUpdate = (id, d) => { const ex = state.cart.find(i => i.id === id); if (ex) { ex.qty += d; if (ex.qty <= 0) state.cart = state.cart.filter(i => i.id !== id); renderCart(); } };
-        window.changeWorker = (w) => { state.activeWorker = w; renderWorkers(); updateUI(); };
-        window.resetCart = () => { if (state.cart.length > 0) showDialog('confirm', 'Reset', 'Voulez-vous effacer le ticket ?', () => { state.cart = []; renderCart(); closeDialog(); }); };
-        window.logout = () => { showDialog('confirm', 'Exit', 'Se déconnecter ?', () => { localStorage.removeItem('bl_sess'); location.reload(); }); };
-
-        window.finishSale = async (m) => {
-            if (state.cart.length === 0) return;
-            const total = state.cart.reduce((s, i) => s + (SERVICES.find(x => x.id === i.id).price * i.qty), 0);
-            const sale = { ticketNumber: state.dailySales.length + 1, worker: state.activeWorker, items: state.cart.map(i => ({ ...SERVICES.find(x => x.id === i.id), qty: i.qty })), total, method: m, date: getTodayISO(), time: new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', ...marocTz }).format(new Date()), timestamp: Date.now() };
-            try { 
-                await addDoc(collection(state.db, 'artifacts', state.appId, 'public', 'data', 'sales'), sale); 
-                printOut(sale); state.cart = []; renderCart(); 
-                showDialog('alert', 'Payé !', 'Vente enregistrée avec succès.', closeDialog);
-            } catch (e) { showDialog('alert', 'Error', 'Cloud error. Check connection.', closeDialog); }
-        };
-
-        function printOut(s) {
-            const c = document.getElementById('printZone');
-            c.innerHTML = `<div style="text-align:center;border-bottom:1px dashed black;padding-bottom:10px;margin-bottom:10px;"><h1 style="margin:0; font-weight:900;">BARBER LAHLOU</h1><small>PREMIUM POS - LUXE</small></div><div style="font-size:11px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between"><span>Ticket:</span><b>#${String(s.ticketNumber).padStart(4,'0')}</b></div><div style="display:flex;justify-content:space-between"><span>Date:</span><b>${s.date} ${s.time}</b></div><div style="display:flex;justify-content:space-between"><span>Staff:</span><b>${s.worker}</b></div></div><div style="border-bottom:1px dashed black;padding-bottom:5px;margin-bottom:5px;">${s.items.map(i=>`<div style="display:flex;justify-content:space-between"><span>${i.qty}x ${i.name}</span><span>${i.price*i.qty} Dh</span></div>`).join('')}</div><div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900;"><span>TOTAL:</span><span>${s.total.toFixed(2)} Dh</span></div><div style="text-align:center;margin-top:25px;font-size:10px; font-weight:bold;">MERCI DE VOTRE CONFIANCE !</div>`;
-            setTimeout(() => window.print(), 50);
-        }
-
-        window.openReports = () => { document.getElementById('reportsModal').classList.remove('hidden'); const p = document.getElementById('reportDate'); if(!p.value) p.value = getTodayISO(); fetchDayData(p.value); };
-        window.closeReports = () => document.getElementById('reportsModal').classList.add('hidden');
-        
-        let rUnsub = null;
-        window.fetchDayData = (d) => {
-            const cont = document.getElementById('reportContent'); cont.innerHTML = `<div class="flex justify-center py-20"><i class="fa-solid fa-spinner fa-spin text-4xl text-blue-500"></i></div>`;
-            if(rUnsub) rUnsub();
-            const q = query(collection(state.db, 'artifacts', state.appId, 'public', 'data', 'sales'), where("date", "==", d));
-            rUnsub = onSnapshot(q, (snap) => { state.reportSales = []; snap.forEach(doc => state.reportSales.push({ id: doc.id, ...doc.data() })); renderReportUI(); });
-        };
-
-        function renderReportUI() {
-            const cont = document.getElementById('reportContent'); const isP = state.user.role === 'ADMIN';
-            let data = isP ? state.reportSales : state.reportSales.filter(s => s.worker === state.user.name);
-            if (data.length === 0) { cont.innerHTML = `<p class="text-center py-20 opacity-30 uppercase tracking-widest font-bold text-slate-500">Aucune Vente</p>`; return; }
-            const total = data.reduce((s, v) => s + v.total, 0);
-            let header = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-blue-600 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden shadow-blue-500/20"><i class="fa-solid fa-vault absolute -right-4 -bottom-4 text-7xl opacity-10 text-white"></i><span class="text-[10px] font-black uppercase opacity-60 tracking-widest text-white/80">Recette Totale</span><p class="text-5xl font-black italic mt-1 text-white">${total.toFixed(2)} Dh</p></div>` + (isP ? `<div class="bg-emerald-600 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden shadow-emerald-500/20"><i class="fa-solid fa-crown absolute -right-4 -bottom-4 text-7xl opacity-10 text-white"></i><span class="text-[10px] font-black uppercase opacity-60 tracking-widest text-white/80">Net Patron</span><p class="text-5xl font-black italic mt-1 text-white">${(total/2).toFixed(2)} Dh</p></div>` : '') + `</div>`;
-            let grid = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">` + data.slice().sort((a,b)=>b.timestamp-a.timestamp).map(s => `<div class="glass p-5 rounded-3xl flex justify-between items-center border border-white/5 shadow-md"><div><p class="font-black text-xs uppercase italic text-white leading-none">#${String(s.ticketNumber).padStart(4,'0')} - ${s.worker}</p><p class="text-[9px] font-bold text-slate-500 uppercase mt-2 tracking-widest leading-none">${s.time}</p></div><div class="flex items-center"><span class="text-xl font-black italic text-blue-400 tracking-tighter">${s.total.toFixed(2)}</span>` + (isP ? `<button onclick="doDel('${s.id}')" class="ml-4 w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center active:scale-90"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : '') + `</div></div>`).join('') + `</div>`;
-            cont.innerHTML = header + grid; document.getElementById('resetBtn').classList.toggle('hidden', !isP);
-        }
-
-        window.doDel = (id) => { showDialog('confirm', 'Supprimer ?', 'Action irréversible.', async () => { await deleteDoc(doc(state.db, 'artifacts', state.appId, 'public', 'data', 'sales', id)); closeDialog(); }); };
-        window.globalReset = () => { showDialog('confirm', 'Reset ?', 'Effacer toute la journée ?', async () => { for (const s of state.reportSales) { await deleteDoc(doc(state.db, 'artifacts', state.appId, 'public', 'data', 'sales', s.id)); } closeDialog(); }); };
-
-        // =========================================================================
-        // UTILS & DIALOGS
-        // =========================================================================
-        const getTodayISO = () => { const d = new Date(); const f = new Intl.DateTimeFormat('en', { year: 'numeric', month: '2-digit', day: '2-digit', ...marocTz }).formatToParts(d); const parts = {}; f.forEach(({type, value}) => parts[type] = value); return `${parts.year}-${parts.month}-${parts.day}`; };
-        window.showDialog = (t, ti, m, onC) => { const mo = document.getElementById('dialogModal'); document.getElementById('dialogTitle').innerText = ti; document.getElementById('dialogMsg').innerText = m; document.getElementById('dialogIcon').innerHTML = t === 'confirm' ? '<i class="fa-solid fa-circle-question text-blue-500"></i>' : '<i class="fa-solid fa-circle-check text-emerald-500"></i>'; const b = document.getElementById('dialogButtons'); b.innerHTML = `<button onclick="closeDialog()" class="flex-1 py-4 rounded-2xl glass text-[10px] font-black uppercase text-white/50 hover:text-white transition-all">Fermer</button>`; if(t === 'confirm') { const ok = document.createElement('button'); ok.className="flex-1 py-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-[10px] shadow-lg shadow-blue-500/20 active:scale-95"; ok.innerText="Confirmer"; ok.onclick=onC; b.appendChild(ok); } mo.classList.remove('hidden'); };
-        window.closeDialog = () => document.getElementById('dialogModal').classList.add('hidden');
-        window.printPreview = () => { if(state.cart.length>0) { const total = state.cart.reduce((s,i)=>s+(SERVICES.find(x=>x.id===i.id).price*i.qty),0); showDialog('confirm', 'Aperçu', `Total: ${total.toFixed(2)} Dh. Imprimer ?`, () => { closeDialog(); finishSale('Espèces'); }); } };
-
-        setInterval(() => { if(state.user) updateUI(); }, 1000);
-        const saved = localStorage.getItem('bl_sess'); if (saved) initApp(JSON.parse(saved));
-    </script>
-</body>
-</html>
-
-```
+export default App;
