@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lahlou Élégance POS</title>
+    <title>Lahlou Élégance POS - Cloud</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM CDN -->
@@ -24,10 +24,37 @@
 <body class="bg-slate-50 text-slate-800">
     <div id="root"></div>
 
-    <script type="text/babel">
+    <!-- HNA KANSTA3MLO MODULE BACH N9DRO N-IMPORTIW FIREBASE -->
+    <script type="text/babel" data-type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // --- CONFIGURATION FIREBASE ---
+        let firebaseConfig;
+        if (typeof __firebase_config !== 'undefined') {
+            // Had l-config katkhdem ghir hna f preview
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            // HADI HIYA L-CONFIG DYALEK (KATHKHDEM F GITHUB)
+            firebaseConfig = {
+                apiKey: "AIzaSyBdNRfkM94j2NWCBnnnnjYnuzjdfwKdIIk",
+                authDomain: "barber-lahlou-caisse.firebaseapp.com",
+                projectId: "barber-lahlou-caisse",
+                storageBucket: "barber-lahlou-caisse.firebasestorage.app",
+                messagingSenderId: "637483895643",
+                appId: "1:637483895643:web:3aa1f4ef4463b54587a87e",
+                measurementId: "G-X4FR70Q6JK"
+            };
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'barber-lahlou-caisse';
+
         const { useState, useEffect, useMemo } = React;
 
-        // Custom Icon Component to avoid external DOM manipulation crashes
         const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
                 scissors: <g><path d="M6 15a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/><path d="m14.7 10.3 5 5"/><path d="M18 15a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><path d="M6 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/><path d="m5.2 5.2 4-4"/><path d="M14.7 13.7 20 19"/><path d="M18 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></g>,
@@ -45,18 +72,7 @@
             };
 
             return (
-                <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width={size} 
-                    height={size} 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className={className}
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                     {icons[name] || null}
                 </svg>
             );
@@ -105,6 +121,7 @@
         ];
 
         const App = () => {
+            const [user, setUser] = useState(null);
             const [view, setView] = useState('pos');
             const [activeCategory, setActiveCategory] = useState('coiffure');
             const [activeSub, setActiveSub] = useState('onglerie');
@@ -114,13 +131,45 @@
             const [editingItem, setEditingItem] = useState(null);
             const [dateStart, setDateStart] = useState('');
             const [dateEnd, setDateEnd] = useState('');
+            const [isSyncing, setIsSyncing] = useState(true);
 
+            // 1. Connexion Firebase
             useEffect(() => {
-                const saved = localStorage.getItem('lahlou_sales');
-                if (saved) {
-                    try { setHistory(JSON.parse(saved)); } catch (e) { console.error(e); }
-                }
+                const initAuth = async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (e) {
+                        console.error("Erreur de connexion:", e);
+                    }
+                };
+                initAuth();
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
             }, []);
+
+            // 2. Synchronisation de l'historique
+            useEffect(() => {
+                if (!user) return;
+                setIsSyncing(true);
+                const salesCol = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
+                
+                const unsubscribe = onSnapshot(salesCol, (snapshot) => {
+                    const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // Trie manuel pour éviter les erreurs d'index Firestore
+                    salesData.sort((a, b) => b.timestamp - a.timestamp);
+                    setHistory(salesData);
+                    setIsSyncing(false);
+                }, (error) => {
+                    console.error("Erreur de synchronisation:", error);
+                    setIsSyncing(false);
+                });
+
+                return () => unsubscribe();
+            }, [user]);
 
             const currentServices = useMemo(() => {
                 if (activeCategory === 'coiffure') return COIFFURE_SERVICES;
@@ -148,22 +197,29 @@
                 }).filter(Boolean));
             };
 
-            const handleCheckout = () => {
-                if (cart.length === 0) return;
+            const handleCheckout = async () => {
+                if (cart.length === 0 || !user) return;
+                setIsSyncing(true);
                 const now = new Date();
                 const transaction = {
-                    id: Date.now(),
                     dateStr: now.toLocaleString('fr-FR'),
                     dateIso: now.toISOString().split('T')[0],
                     timestamp: now.getTime(),
                     items: [...cart],
                     total: subtotal
                 };
-                const newHistory = [transaction, ...history];
-                setHistory(newHistory);
-                localStorage.setItem('lahlou_sales', JSON.stringify(newHistory));
-                setShowReceipt(transaction);
-                setCart([]);
+                
+                try {
+                    const salesCol = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
+                    await addDoc(salesCol, transaction);
+                    setShowReceipt({ ...transaction, id: Date.now() }); // Temporary ID for receipt UI
+                    setCart([]);
+                } catch (err) {
+                    console.error("Erreur de sauvegarde:", err);
+                    alert("Erreur de sauvegarde. Vérifiez votre connexion.");
+                } finally {
+                    setIsSyncing(false);
+                }
             };
 
             const openPriceEditor = (item) => {
@@ -194,7 +250,12 @@
                             </div>
                             <div>
                                 <h1 className="text-lg font-black text-rose-900 leading-none tracking-tighter uppercase">LAHLOU ÉLÉGANCE</h1>
-                                <span className="text-[10px] text-rose-400 font-black uppercase tracking-widest">Salon de Beauté</span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${user ? 'bg-green-400' : 'bg-orange-400 animate-pulse'}`}></div>
+                                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                                        {user ? 'Connecté (Cloud)' : 'Connexion...'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200">
@@ -284,11 +345,11 @@
                                                 <span className="text-4xl font-black text-rose-600 tracking-tighter">{subtotal} <small className="text-sm font-bold">DH</small></span>
                                             </div>
                                             <button 
-                                                disabled={cart.length === 0}
+                                                disabled={cart.length === 0 || isSyncing}
                                                 onClick={handleCheckout}
-                                                className={`w-full py-5 rounded-[2rem] font-black text-lg flex items-center justify-center gap-3 transition-all shadow-2xl active:scale-95 ${cart.length > 0 ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-rose-200' : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'}`}
+                                                className={`w-full py-5 rounded-[2rem] font-black text-lg flex items-center justify-center gap-3 transition-all shadow-2xl active:scale-95 ${cart.length > 0 && !isSyncing ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-rose-200' : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'}`}
                                             >
-                                                ENCAISSER <Icon name="chevron-right" size={22} />
+                                                {isSyncing ? 'Sync...' : 'ENCAISSER'} <Icon name="chevron-right" size={22} />
                                             </button>
                                         </div>
                                     </div>
@@ -314,7 +375,7 @@
                                     <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
                                         <h2 className="text-xl font-black flex items-center gap-3 text-slate-800 uppercase tracking-tight">
                                             <div className="w-10 h-10 bg-rose-500 rounded-2xl flex items-center justify-center text-white"><Icon name="history" size={20} /></div>
-                                            Historique
+                                            Historique Cloud
                                         </h2>
                                         <div className="text-right">
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recette Période</p>
@@ -331,9 +392,8 @@
                                             filteredHistory.map((tx) => (
                                                 <div key={tx.id} className="p-6 flex items-center justify-between hover:bg-rose-50/20 transition-all group">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-12 rounded-2xl bg-slate-50 flex flex-col items-center justify-center border border-slate-100 group-hover:bg-white transition-colors">
-                                                            <span className="text-[10px] font-black text-slate-400">#</span>
-                                                            <span className="text-xs font-black text-slate-700">{tx.id.toString().slice(-4)}</span>
+                                                        <div className="w-12 h-12 rounded-2xl bg-green-50 flex flex-col items-center justify-center border border-green-100 transition-colors">
+                                                            <Icon name="check-circle-2" size={16} className="text-green-500" />
                                                         </div>
                                                         <div>
                                                             <div className="font-black text-lg text-slate-800">{tx.total} DH</div>
@@ -385,15 +445,15 @@
                                 <div className="bg-rose-500 p-12 text-center text-white relative">
                                     <button onClick={() => setShowReceipt(null)} className="absolute top-8 right-8 p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"><Icon name="x" size={20} /></button>
                                     <div className="bg-white/20 w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 backdrop-blur-sm shadow-xl"><Icon name="check-circle-2" size={40} className="text-white" /></div>
-                                    <h2 className="text-3xl font-black mb-1 uppercase tracking-tighter">Vente Réussie</h2>
-                                    <p className="text-rose-100 text-sm font-bold opacity-80 uppercase tracking-widest">Enregistré localement</p>
+                                    <h2 className="text-3xl font-black mb-1 uppercase tracking-tighter">Vente Cloud</h2>
+                                    <p className="text-rose-100 text-sm font-bold opacity-80 uppercase tracking-widest">Enregistrée f cloud</p>
                                 </div>
                                 <div className="p-10">
                                     <div className="text-center mb-10">
                                         <h3 className="text-2xl font-black text-rose-900 tracking-tighter uppercase">LAHLOU ÉLÉGANCE</h3>
                                         <div className="h-px bg-slate-100 w-full my-6"></div>
                                         <div className="text-[10px] text-slate-400 flex justify-between uppercase font-black tracking-widest bg-slate-50 px-5 py-2.5 rounded-full">
-                                            <span>#{showReceipt.id.toString().slice(-6)}</span>
+                                            <span>Ticket N° #{showReceipt.id ? showReceipt.id.toString().slice(-6) : 'N/A'}</span>
                                             <span>{showReceipt.dateStr}</span>
                                         </div>
                                     </div>
